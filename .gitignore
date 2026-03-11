@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+htmlcov/
+coverage.xml
+.coverage
+*.cover
+
+# llm-assert baselines (user-specific, not committed)
+.llm_assert_baselines/
+
+# ML models cache
+.models_cache/
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reference docs (not part of the library)
+*.docx
+*.pdf
+rought.txt
+
+# Environment
+.env
+.env.local

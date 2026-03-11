@@ -1,0 +1,87 @@
+"""Semantic similarity engine using sentence-transformers.
+
+This is the core engine that powers mentions(), not_mentions(), intent(),
+and drift detection. Uses offline models -- no LLM judge, no API cost.
+"""
+
+from __future__ import annotations
+
+import logging
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
+# Singleton engine instance
+_engine: SemanticEngine | None = None
+
+# Default model -- small (80MB), fast, works offline
+DEFAULT_MODEL = "all-MiniLM-L6-v2"
+
+
+class SemanticEngine:
+    """Embedding-based semantic similarity engine.
+
+    Loads a sentence-transformer model lazily on first use.
+    All subsequent calls reuse the loaded model.
+    """
+
+    def __init__(self, model_name: str = DEFAULT_MODEL) -> None:
+        self._model_name = model_name
+        self._model = None
+
+    @property
+    def model_name(self) -> str:
+        return self._model_name
+
+    @property
+    def model_version(self) -> str:
+        return self._model_name
+
+    def _load_model(self) -> None:
+        """Load the sentence-transformer model. Called lazily on first use."""
+        if self._model is not None:
+            return
+
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            logger.info("Loading semantic model: %s", self._model_name)
+            self._model = SentenceTransformer(self._model_name)
+            logger.info("Semantic model loaded successfully.")
+        except ImportError:
+            raise ImportError(
+                "sentence-transformers is required for semantic assertions. "
+                "Install it with: pip install llm-assert[semantic]"
+            )
+
+    def encode(self, text: str) -> np.ndarray:
+        """Encode text into an embedding vector."""
+        self._load_model()
+        return self._model.encode(text, convert_to_numpy=True)
+
+    def similarity(self, text_a: str, text_b: str) -> float:
+        """Compute cosine similarity between two texts.
+
+        Returns a float between -1 and 1 (typically 0 to 1 for natural text).
+        """
+        emb_a = self.encode(text_a)
+        emb_b = self.encode(text_b)
+
+        # Cosine similarity
+        dot = np.dot(emb_a, emb_b)
+        norm_a = np.linalg.norm(emb_a)
+        norm_b = np.linalg.norm(emb_b)
+
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+
+        return float(dot / (norm_a * norm_b))
+
+
+def get_semantic_engine(model_name: str = DEFAULT_MODEL) -> SemanticEngine:
+    """Get the singleton semantic engine instance."""
+    global _engine
+    if _engine is None or _engine.model_name != model_name:
+        _engine = SemanticEngine(model_name)
+    return _engine
