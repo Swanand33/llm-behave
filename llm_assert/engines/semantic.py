@@ -7,6 +7,7 @@ and drift detection. Uses offline models -- no LLM judge, no API cost.
 from __future__ import annotations
 
 import logging
+import re
 
 import numpy as np
 
@@ -77,6 +78,18 @@ class SemanticEngine:
             return 0.0
 
         return float(dot / (norm_a * norm_b))
+
+
+    def max_sentence_similarity(self, text: str, query: str) -> float:
+        """Compute max cosine similarity between query and any sentence in text.
+
+        Splits text into sentences and returns the highest similarity found.
+        More accurate than whole-text comparison for paragraph inputs.
+        """
+        sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
+        if not sentences:
+            return self.similarity(text, query)
+        return max(self.similarity(sentence, query) for sentence in sentences)
 
 
 def get_semantic_engine(model_name: str = DEFAULT_MODEL) -> SemanticEngine:

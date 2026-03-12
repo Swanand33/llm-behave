@@ -43,3 +43,12 @@ rought.txt
 # Environment
 .env
 .env.local
+
+# Internal / private files (not for public GitHub)
+CLAUDE.md
+ideas.txt
+PROJECT_LOG.txt
+PLAIN_ENGLISH_GUIDE.txt
+launch/
+.claudeignore
+.vscode/

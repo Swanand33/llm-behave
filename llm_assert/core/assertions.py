@@ -55,7 +55,7 @@ class AssertBehavior:
     def results(self) -> list[AssertionResult]:
         return list(self._results)
 
-    def mentions(self, concept: str, threshold: float = 0.5) -> AssertBehavior:
+    def mentions(self, concept: str, threshold: float = 0.45) -> AssertBehavior:
         """Assert that the output semantically mentions a concept.
 
         Uses embedding similarity, not exact string matching.
@@ -63,7 +63,7 @@ class AssertBehavior:
         from llm_assert.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
-        score = engine.similarity(self._text, concept)
+        score = engine.max_sentence_similarity(self._text, concept)
         passed = score >= threshold
 
         result = AssertionResult(
@@ -85,12 +85,12 @@ class AssertBehavior:
         )
         return self
 
-    def not_mentions(self, concept: str, threshold: float = 0.5) -> AssertBehavior:
+    def not_mentions(self, concept: str, threshold: float = 0.45) -> AssertBehavior:
         """Assert that the output does NOT semantically mention a concept."""
         from llm_assert.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
-        score = engine.similarity(self._text, concept)
+        score = engine.max_sentence_similarity(self._text, concept)
         passed = score < threshold
 
         result = AssertionResult(
@@ -143,12 +143,12 @@ class AssertBehavior:
         )
         return self
 
-    def intent(self, expected_intent: str, threshold: float = 0.5) -> AssertBehavior:
+    def intent(self, expected_intent: str, threshold: float = 0.3) -> AssertBehavior:
         """Assert that the output's intent matches the expected description."""
         from llm_assert.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
-        score = engine.similarity(self._text, expected_intent)
+        score = engine.max_sentence_similarity(self._text, expected_intent)
         passed = score >= threshold
 
         result = AssertionResult(
