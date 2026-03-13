@@ -11,10 +11,10 @@ from pathlib import Path
 
 import pytest
 
-from llm_assert.core.assertions import assert_behavior, behavioral_test
-from llm_assert.core.conversation import ConversationTest
-from llm_assert.core.drift import DriftTest
-from llm_assert.providers.base import MockProvider
+from llm_behave.core.assertions import assert_behavior, behavioral_test
+from llm_behave.core.conversation import ConversationTest
+from llm_behave.core.drift import DriftTest
+from llm_behave.providers.base import MockProvider
 
 
 # ---------------------------------------------------------------------------

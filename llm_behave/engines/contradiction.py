@@ -36,7 +36,7 @@ class ContradictionEngine:
         except ImportError:
             raise ImportError(
                 "sentence-transformers is required for contradiction detection. "
-                "Install it with: pip install llm-assert[semantic]"
+                "Install it with: pip install llm-behave[semantic]"
             )
 
     def check_contradiction(self, text_a: str, text_b: str) -> float:

@@ -37,7 +37,7 @@ class DriftTest:
     Designed for CI pipelines to catch silent model regressions.
     """
 
-    DEFAULT_DIR = Path(".llm_assert_baselines")
+    DEFAULT_DIR = Path(".llm_behave_baselines")
 
     @staticmethod
     def baseline(
@@ -48,7 +48,7 @@ class DriftTest:
 
         Args:
             save_as: Name for this baseline.
-            baseline_dir: Directory to store baselines. Defaults to .llm_assert_baselines/
+            baseline_dir: Directory to store baselines. Defaults to .llm_behave_baselines/
         """
         storage = Path(baseline_dir) if baseline_dir else DriftTest.DEFAULT_DIR
 
@@ -91,7 +91,7 @@ class DriftTest:
                 "Run the baseline test first to create it."
             )
 
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
 
@@ -122,7 +122,7 @@ class DriftTest:
             existing.outputs.append(text)
             data = existing.model_dump()
         else:
-            from llm_assert.engines.semantic import get_semantic_engine
+            from llm_behave.engines.semantic import get_semantic_engine
 
             engine = get_semantic_engine()
             data = DriftBaseline(

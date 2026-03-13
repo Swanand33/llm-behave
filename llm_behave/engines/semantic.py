@@ -53,7 +53,7 @@ class SemanticEngine:
         except ImportError:
             raise ImportError(
                 "sentence-transformers is required for semantic assertions. "
-                "Install it with: pip install llm-assert[semantic]"
+                "Install it with: pip install llm-behave[semantic]"
             )
 
     def encode(self, text: str) -> np.ndarray:

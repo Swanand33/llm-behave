@@ -58,7 +58,7 @@ pip install llm-behave[semantic]
 ### Basic assertions
 
 ```python
-from llm_assert import assert_behavior
+from llm_behave import assert_behavior
 
 output = my_llm("I want a refund")
 
@@ -95,17 +95,17 @@ assert_behavior(text, tool_calls) \
 ### Multi-turn conversation testing
 
 ```python
-from llm_assert import ConversationTest, MockProvider
+from llm_behave import ConversationTest, MockProvider
 
 conv = ConversationTest(agent=my_agent)
 
-conv.say("Hi, my name is Swanand")
+conv.say("Hi, my name is Alex")
 conv.say("I placed order #5678 last week")
 response = conv.say("When will it arrive?")
 
 # Does it remember context from earlier turns?
 assert response.recalls("order")
-assert response.recalls("Swanand")
+assert response.recalls("Alex")
 
 # Is tone consistent across the whole conversation?
 assert response.consistent_tone_across_turns(threshold=0.6)
@@ -116,7 +116,7 @@ assert response.consistent_tone_across_turns(threshold=0.6)
 Catch silent regressions when you update your model or prompts.
 
 ```python
-from llm_assert import DriftTest
+from llm_behave import DriftTest
 
 # First run: save baseline
 @DriftTest.baseline(save_as="support_refund_flow")
@@ -152,14 +152,14 @@ def test_conversation(conversation):
 Built-in adapters for all major LLM providers:
 
 ```python
-from llm_assert.providers.openai_adapter import OpenAIProvider
-from llm_assert.providers.anthropic_adapter import AnthropicProvider
-from llm_assert.providers.ollama_adapter import OllamaProvider
-from llm_assert import MockProvider  # for tests, no API calls
+from llm_behave.providers.openai_adapter import OpenAIProvider
+from llm_behave.providers.anthropic_adapter import AnthropicProvider
+from llm_behave.providers.ollama_adapter import OllamaProvider
+from llm_behave import MockProvider  # for tests, no API calls
 
 # All providers have the same interface
 provider = OpenAIProvider(model="gpt-4o-mini")
-provider = AnthropicProvider(model="claude-haiku-4-5-20251001")
+provider = AnthropicProvider(model="claude-haiku-4-5")
 provider = OllamaProvider(model="llama3")
 
 output = provider.chat([{"role": "user", "content": "Hello"}])
@@ -169,7 +169,7 @@ text, tool_calls = provider.chat_with_tools(messages, tools=my_tools)
 Bring your own provider by subclassing `LLMProvider`:
 
 ```python
-from llm_assert.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider
 
 class MyProvider(LLMProvider):
     def chat(self, messages, **kwargs):

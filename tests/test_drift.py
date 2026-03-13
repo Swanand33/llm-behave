@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from llm_assert.core.drift import DriftTest, DriftBaseline, DriftResult
+from llm_behave.core.drift import DriftTest, DriftBaseline, DriftResult
 
 
 class TestDriftBaseline:

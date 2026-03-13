@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_assert.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):
@@ -22,7 +22,7 @@ class OpenAIProvider(LLMProvider):
             self._client = openai.OpenAI(**client_kwargs)
         except ImportError:
             raise ImportError(
-                "openai package required. Install with: pip install llm-assert[openai]"
+                "openai package required. Install with: pip install llm-behave[openai]"
             )
         self._model = model
 

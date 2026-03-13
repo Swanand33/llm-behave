@@ -60,7 +60,7 @@ class AssertBehavior:
 
         Uses embedding similarity, not exact string matching.
         """
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
         score = engine.max_sentence_similarity(self._text, concept)
@@ -87,7 +87,7 @@ class AssertBehavior:
 
     def not_mentions(self, concept: str, threshold: float = 0.45) -> AssertBehavior:
         """Assert that the output does NOT semantically mention a concept."""
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
         score = engine.max_sentence_similarity(self._text, concept)
@@ -118,7 +118,7 @@ class AssertBehavior:
         Uses embedding similarity between the output and tone descriptions.
         Supported tones: empathetic, professional, friendly, formal, casual, rude, etc.
         """
-        from llm_assert.engines.tone import get_tone_engine
+        from llm_behave.engines.tone import get_tone_engine
 
         engine = get_tone_engine()
         score = engine.check_tone(self._text, expected_tone)
@@ -145,7 +145,7 @@ class AssertBehavior:
 
     def intent(self, expected_intent: str, threshold: float = 0.3) -> AssertBehavior:
         """Assert that the output's intent matches the expected description."""
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
         score = engine.max_sentence_similarity(self._text, expected_intent)
@@ -217,7 +217,7 @@ def behavioral_test(func: Callable) -> Callable:
         try:
             return func(*args, **kwargs)
         except AssertionError as e:
-            raise AssertionError(f"[llm-assert] Behavioral test failed: {e}") from e
+            raise AssertionError(f"[llm-behave] Behavioral test failed: {e}") from e
 
     wrapper._is_behavioral_test = True  # type: ignore[attr-defined]
     return wrapper

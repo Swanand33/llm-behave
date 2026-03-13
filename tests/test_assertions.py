@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_assert.core.assertions import AssertBehavior, assert_behavior, behavioral_test
+from llm_behave.core.assertions import AssertBehavior, assert_behavior, behavioral_test
 
 
 class TestAssertBehaviorConstruction:
@@ -86,7 +86,7 @@ class TestBehavioralTestDecorator:
         def failing_test():
             assert False, "something broke"
 
-        with pytest.raises(AssertionError, match="llm-assert"):
+        with pytest.raises(AssertionError, match="llm-behave"):
             failing_test()
 
     def test_decorator_passes_through_on_success(self):

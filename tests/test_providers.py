@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_assert.providers.base import MockProvider
+from llm_behave.providers.base import MockProvider
 
 
 class TestMockProvider:

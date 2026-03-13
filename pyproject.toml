@@ -51,7 +51,7 @@ dev = [
 ]
 
 [project.entry-points.pytest11]
-llm_assert = "llm_assert.plugin.pytest_plugin"
+llm_behave = "llm_behave.plugin.pytest_plugin"
 
 [project.urls]
 Homepage = "https://github.com/Swanand33/llm-behave"
@@ -59,7 +59,7 @@ Repository = "https://github.com/Swanand33/llm-behave"
 Issues = "https://github.com/Swanand33/llm-behave/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["llm_assert"]
+packages = ["llm_behave"]
 
 [tool.ruff]
 target-version = "py310"

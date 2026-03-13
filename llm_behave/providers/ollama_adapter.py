@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_assert.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider
 
 
 class OllamaProvider(LLMProvider):
@@ -22,7 +22,7 @@ class OllamaProvider(LLMProvider):
             self._client = ollama.Client(host=host) if host else ollama.Client()
         except ImportError:
             raise ImportError(
-                "ollama package required. Install with: pip install llm-assert[ollama]"
+                "ollama package required. Install with: pip install llm-behave[ollama]"
             )
         self._model = model
 

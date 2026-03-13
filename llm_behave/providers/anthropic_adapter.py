@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_assert.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider
 
 
 class AnthropicProvider(LLMProvider):
@@ -22,7 +22,7 @@ class AnthropicProvider(LLMProvider):
             self._client = anthropic.Anthropic(**client_kwargs)
         except ImportError:
             raise ImportError(
-                "anthropic package required. Install with: pip install llm-assert[anthropic]"
+                "anthropic package required. Install with: pip install llm-behave[anthropic]"
             )
         self._model = model
 

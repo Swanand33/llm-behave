@@ -20,8 +20,9 @@ coverage.xml
 .coverage
 *.cover
 
-# llm-assert baselines (user-specific, not committed)
+# llm-behave baselines (user-specific, not committed)
 .llm_assert_baselines/
+.llm_behave_baselines/
 
 # ML models cache
 .models_cache/
@@ -52,3 +53,5 @@ PLAIN_ENGLISH_GUIDE.txt
 launch/
 .claudeignore
 .vscode/
+.claude/
+.llm_behave_baselines/

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_assert.core.assertions import assert_behavior
+from llm_behave.core.assertions import assert_behavior
 
 
 class TestIntent:

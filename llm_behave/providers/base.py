@@ -11,7 +11,7 @@ class LLMProvider(ABC):
 
     Implement this to add support for any LLM provider.
     The adapter normalizes provider-specific responses into
-    a standard format that llm-assert can test.
+    a standard format that llm-behave can test.
     """
 
     @abstractmethod

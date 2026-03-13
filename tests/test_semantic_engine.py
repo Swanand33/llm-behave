@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_assert.engines.semantic import SemanticEngine, get_semantic_engine
+from llm_behave.engines.semantic import SemanticEngine, get_semantic_engine
 
 
 @pytest.fixture(scope="module")

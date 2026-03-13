@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to llm-assert will be documented here.
+All notable changes to llm-behave will be documented here.
 
 ## [0.1.0] — 2026-03-12
 

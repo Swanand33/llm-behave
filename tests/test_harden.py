@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from llm_assert.core.assertions import assert_behavior, AssertBehavior
-from llm_assert.core.conversation import ConversationTest
-from llm_assert.core.drift import DriftTest
-from llm_assert.providers.base import MockProvider
+from llm_behave.core.assertions import assert_behavior, AssertBehavior
+from llm_behave.core.conversation import ConversationTest
+from llm_behave.core.drift import DriftTest
+from llm_behave.providers.base import MockProvider
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +291,7 @@ class TestPerformance:
     @pytest.fixture(autouse=True)
     def warmup_model(self):
         """Ensure model is loaded before timing."""
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
         e = get_semantic_engine()
         e.encode("warmup")
 
@@ -343,21 +343,21 @@ class TestSingletonAndLazyLoading:
 
     def test_semantic_engine_singleton(self):
         """get_semantic_engine() returns same instance on repeated calls."""
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
         e1 = get_semantic_engine()
         e2 = get_semantic_engine()
         assert e1 is e2
 
     def test_tone_engine_singleton(self):
         """get_tone_engine() returns same instance on repeated calls."""
-        from llm_assert.engines.tone import get_tone_engine
+        from llm_behave.engines.tone import get_tone_engine
         t1 = get_tone_engine()
         t2 = get_tone_engine()
         assert t1 is t2
 
     def test_model_not_reloaded_on_second_call(self):
         """SemanticEngine._model is set after first encode — not reloaded."""
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
         engine = get_semantic_engine()
         engine.encode("first call loads the model")
         model_ref = engine._model
@@ -365,9 +365,9 @@ class TestSingletonAndLazyLoading:
         assert engine._model is model_ref
 
     def test_semantic_import_does_not_import_torch(self):
-        """Importing llm_assert.engines.semantic does NOT import torch at module level."""
+        """Importing llm_behave.engines.semantic does NOT import torch at module level."""
         import sys
         # torch should only be imported AFTER encode() is called, not on import
         # We verify the module can be reimported without torch being a hard dep
-        import llm_assert.engines.semantic  # should not crash even if torch is present
-        assert "llm_assert.engines.semantic" in sys.modules
+        import llm_behave.engines.semantic  # should not crash even if torch is present
+        assert "llm_behave.engines.semantic" in sys.modules

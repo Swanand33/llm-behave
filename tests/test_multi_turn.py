@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_assert.core.conversation import ConversationTest
+from llm_behave.core.conversation import ConversationTest
 
 
 def make_agent(responses: list[str]):

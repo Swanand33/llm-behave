@@ -32,7 +32,7 @@ class ConversationResponse:
 
     def recalls(self, concept: str, threshold: float = 0.5) -> bool:
         """Check if the response recalls/references a concept from conversation history."""
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
         score = engine.similarity(self._content, concept)
@@ -55,7 +55,7 @@ class ConversationResponse:
         if target_turn is None:
             raise ValueError(f"Turn {turn_number} not found in conversation history.")
 
-        from llm_assert.engines.contradiction import get_contradiction_engine
+        from llm_behave.engines.contradiction import get_contradiction_engine
 
         engine = get_contradiction_engine()
         contradiction_score = engine.check_contradiction(
@@ -65,7 +65,7 @@ class ConversationResponse:
 
     def consistent_tone_across_turns(self, threshold: float = 0.7) -> bool:
         """Check if tone is consistent across all assistant turns."""
-        from llm_assert.engines.tone import get_tone_engine
+        from llm_behave.engines.tone import get_tone_engine
 
         engine = get_tone_engine()
         assistant_turns = [t.content for t in self._history if t.role == "assistant"]

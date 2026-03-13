@@ -103,7 +103,7 @@ class ToneEngine:
         Returns:
             Max similarity score against tone example sentences (0 to 1).
         """
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
 
@@ -135,7 +135,7 @@ class ToneEngine:
 
         Used for consistent_tone_across_turns().
         """
-        from llm_assert.engines.semantic import get_semantic_engine
+        from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
         return engine.similarity(text_a, text_b)

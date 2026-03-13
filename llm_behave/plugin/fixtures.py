@@ -1,4 +1,4 @@
-"""Additional pytest fixtures for llm-assert.
+"""Additional pytest fixtures for llm-behave.
 
 Fixtures are registered via pytest_plugin.py (the pytest11 entry point).
 This file is intentionally minimal — all fixtures live in pytest_plugin.py.

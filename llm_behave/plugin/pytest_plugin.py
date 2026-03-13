@@ -1,4 +1,4 @@
-"""pytest plugin for llm-assert.
+"""pytest plugin for llm-behave.
 
 Registered via pyproject.toml [project.entry-points.pytest11].
 Provides fixtures and hooks for behavioral testing.
@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import pytest
 
-from llm_assert.core.assertions import AssertBehavior, assert_behavior
-from llm_assert.core.conversation import ConversationTest
-from llm_assert.providers.base import MockProvider
+from llm_behave.core.assertions import AssertBehavior, assert_behavior
+from llm_behave.core.conversation import ConversationTest
+from llm_behave.providers.base import MockProvider
 
 
 @pytest.fixture
