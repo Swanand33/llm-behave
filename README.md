@@ -1,4 +1,4 @@
-# llm-assert
+# llm-behave
 
 **Behavioral testing for LLM applications. A pytest plugin.**
 
@@ -16,14 +16,14 @@ def test_support_bot():
 
 ---
 
-## Why llm-assert?
+## Why llm-behave?
 
 Most LLM testing tools either:
 - Use another LLM to judge the output (expensive, slow, circular)
 - Only do exact string matching (misses semantic meaning)
 - Don't support multi-turn conversations at all
 
-**llm-assert** uses small offline transformer models (80MB, runs on CPU) to understand meaning — no API calls, no cost, no internet required during tests.
+**llm-behave** uses small offline transformer models (80MB, runs on CPU) to understand meaning — no API calls, no cost, no internet required during tests.
 
 ---
 
@@ -31,10 +31,10 @@ Most LLM testing tools either:
 
 ```bash
 # Core (tool call assertions, structure tests — no ML deps)
-pip install llm-assert
+pip install llm-behave
 
 # Full (semantic assertions: mentions, tone, intent, drift)
-pip install llm-assert[semantic]
+pip install llm-behave[semantic]
 ```
 
 ---
@@ -182,7 +182,7 @@ class MyProvider(LLMProvider):
 
 ## How it works
 
-llm-assert uses [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) — an 80MB sentence-transformer model that runs fully offline on CPU.
+llm-behave uses [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) — an 80MB sentence-transformer model that runs fully offline on CPU.
 
 - **`mentions()` / `not_mentions()`** — splits text into sentences, computes max cosine similarity between any sentence and your concept
 - **`tone()`** — batch-encodes input text against example sentences for each tone, returns max similarity
@@ -231,12 +231,12 @@ pytest -m drift
 ## Full install options
 
 ```bash
-pip install llm-assert                          # core only
-pip install llm-assert[semantic]                # + sentence-transformers + torch
-pip install llm-assert[openai]                  # + openai SDK
-pip install llm-assert[anthropic]               # + anthropic SDK
-pip install llm-assert[ollama]                  # + ollama SDK
-pip install llm-assert[all]                     # everything
+pip install llm-behave                          # core only
+pip install llm-behave[semantic]                # + sentence-transformers + torch
+pip install llm-behave[openai]                  # + openai SDK
+pip install llm-behave[anthropic]               # + anthropic SDK
+pip install llm-behave[ollama]                  # + ollama SDK
+pip install llm-behave[all]                     # everything
 ```
 
 ---
@@ -245,7 +245,7 @@ pip install llm-assert[all]                     # everything
 
 - Python 3.10+
 - pytest 7.0+
-- For semantic assertions: `pip install llm-assert[semantic]`
+- For semantic assertions: `pip install llm-behave[semantic]`
 
 ---
 
