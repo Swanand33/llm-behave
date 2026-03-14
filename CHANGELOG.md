@@ -2,6 +2,11 @@
 
 All notable changes to llm-behave will be documented here.
 
+## [0.1.1] — 2026-03-14
+
+### Fixed
+- v0.1.0 wheel shipped with package folder named `llm_assert` (old internal name) instead of `llm_behave`, causing `ModuleNotFoundError` on all imports. Rebuilt wheel with correct `llm_behave` package structure.
+
 ## [0.1.0] — 2026-03-12
 
 First public release.

@@ -21,9 +21,6 @@ coverage.xml
 *.cover
 
 # llm-behave baselines (user-specific, not committed)
-.llm_assert_baselines/
-.llm_behave_baselines/
-
 # ML models cache
 .models_cache/
 
