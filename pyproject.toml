@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llm-behave"
-version = "0.1.1"
+version = "0.1.2"
 description = "Behavioral testing for LLM applications. pytest plugin with semantic assertions, multi-turn conversation testing, and drift detection. No LLM judge needed."
 readme = "README.md"
 license = "MIT"

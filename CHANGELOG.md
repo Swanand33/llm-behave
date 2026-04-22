@@ -2,6 +2,18 @@
 
 All notable changes to llm-behave will be documented here.
 
+## [0.1.2] — 2026-04-22
+
+### Added
+- `.contradicts(other_text)` assertion on `AssertBehavior` — uses the NLI engine to assert that the output contradicts a reference statement. Useful for detecting policy reversals across turns.
+- `get_contradiction_engine` exported from top-level `llm_behave` package.
+- `max_outputs` parameter on `@DriftTest.baseline()` (default 20) — baseline file now acts as a ring buffer, evicting oldest outputs once the cap is reached.
+
+### Fixed
+- `DriftBaseline.embeddings` was always `None`; `_save_baseline()` now computes and stores embeddings for every output on each save.
+- `get_semantic_engine()` replaced a previous model when called with a different `model_name` argument. It now maintains a per-model cache so multiple models can coexist.
+- Assertion default thresholds extracted to named constants (`_DEFAULT_MENTIONS`, `_DEFAULT_NOT_MENTIONS`, `_DEFAULT_INTENT`, `_DEFAULT_TONE`, `_DEFAULT_CONTRADICTS`) with documentation explaining why they differ.
+
 ## [0.1.1] — 2026-03-14
 
 ### Fixed

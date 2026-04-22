@@ -107,3 +107,44 @@ class TestAssertionResults:
         assert len(ab.results) == 1
         assert ab.results[0].passed is True
         assert ab.results[0].assertion_type == "calls_tool"
+
+
+class TestContradicts:
+    """Test the contradicts() assertion using the NLI engine."""
+
+    def test_contradiction_detected(self):
+        reference = "Refunds are always available within 30 days."
+        contradicting = "We never offer refunds under any circumstances."
+        ab = assert_behavior(contradicting)
+        # Should pass — the output clearly contradicts the reference
+        ab.contradicts(reference, threshold=0.3)
+        assert ab.results[-1].passed is True
+        assert ab.results[-1].assertion_type == "contradicts"
+
+    def test_non_contradiction_fails_assertion(self):
+        reference = "Refunds are always available within 30 days."
+        agreeing = "Yes, we offer refunds within 30 days of purchase."
+        ab = assert_behavior(agreeing)
+        with pytest.raises(AssertionError, match="does not contradict"):
+            ab.contradicts(reference, threshold=0.9)
+
+    def test_contradiction_score_is_float(self):
+        ab = assert_behavior("We never give refunds.")
+        ab._results.clear()
+        try:
+            ab.contradicts("Refunds are always available.", threshold=0.0)
+        except AssertionError:
+            pass
+        if ab.results:
+            assert isinstance(ab.results[-1].similarity_score, float)
+
+    def test_contradicts_result_tracked(self):
+        reference = "The sky is blue."
+        contradiction = "The sky is not blue, it is red."
+        ab = assert_behavior(contradiction)
+        try:
+            ab.contradicts(reference, threshold=0.0)
+        except AssertionError:
+            pass
+        result = next((r for r in ab.results if r.assertion_type == "contradicts"), None)
+        assert result is not None

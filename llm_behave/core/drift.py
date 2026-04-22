@@ -16,7 +16,8 @@ class DriftBaseline(BaseModel):
     model_name: str
     model_version: str
     outputs: list[str]
-    embeddings: list[list[float]] | None = None
+    embeddings: list[list[float]] = []
+    max_outputs: int = 20
     metadata: dict[str, Any] = {}
 
 
@@ -43,20 +44,21 @@ class DriftTest:
     def baseline(
         save_as: str,
         baseline_dir: str | Path | None = None,
+        max_outputs: int = 20,
     ) -> Callable:
         """Decorator that saves test output as a baseline.
 
         Args:
             save_as: Name for this baseline.
             baseline_dir: Directory to store baselines. Defaults to .llm_behave_baselines/
+            max_outputs: Maximum outputs to retain (ring buffer). Defaults to 20.
         """
         storage = Path(baseline_dir) if baseline_dir else DriftTest.DEFAULT_DIR
 
         def decorator(func: Callable) -> Callable:
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 result = func(*args, **kwargs)
-                # Save baseline
-                DriftTest._save_baseline(save_as, result, storage)
+                DriftTest._save_baseline(save_as, result, storage, max_outputs)
                 return result
 
             wrapper._drift_baseline_name = save_as  # type: ignore[attr-defined]
@@ -95,7 +97,6 @@ class DriftTest:
 
         engine = get_semantic_engine()
 
-        # Compare current output against all baseline outputs
         scores = [engine.similarity(current_output, b) for b in baseline.outputs]
         max_score = max(scores) if scores else 0.0
 
@@ -111,25 +112,29 @@ class DriftTest:
         )
 
     @staticmethod
-    def _save_baseline(name: str, output: Any, directory: Path) -> None:
+    def _save_baseline(name: str, output: Any, directory: Path, max_outputs: int = 20) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         filepath = directory / f"{name}.json"
 
+        from llm_behave.engines.semantic import get_semantic_engine
+
+        engine = get_semantic_engine()
         text = str(output)
         existing = DriftTest._load_baseline(name, directory)
 
         if existing:
             existing.outputs.append(text)
+            existing.outputs = existing.outputs[-existing.max_outputs:]
+            existing.embeddings = [engine.encode(o).tolist() for o in existing.outputs]
             data = existing.model_dump()
         else:
-            from llm_behave.engines.semantic import get_semantic_engine
-
-            engine = get_semantic_engine()
             data = DriftBaseline(
                 name=name,
                 model_name=engine.model_name,
                 model_version=engine.model_version,
                 outputs=[text],
+                embeddings=[engine.encode(text).tolist()],
+                max_outputs=max_outputs,
             ).model_dump()
 
         filepath.write_text(json.dumps(data, indent=2))

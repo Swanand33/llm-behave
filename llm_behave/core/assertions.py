@@ -7,6 +7,17 @@ from typing import Any, Callable
 
 from pydantic import BaseModel
 
+# Default thresholds are intentionally different per assertion type:
+#   mentions / not_mentions — keyword-level signal, mid-range sensitivity
+#   intent               — semantic purpose is broader, needs a looser gate
+#   tone                 — style signal is subtle, needs a tighter gate
+#   contradicts          — NLI raw score; 0.5 is mid-point of [0, 1]
+_DEFAULT_MENTIONS = 0.45
+_DEFAULT_NOT_MENTIONS = 0.45
+_DEFAULT_INTENT = 0.30
+_DEFAULT_TONE = 0.50
+_DEFAULT_CONTRADICTS = 0.50
+
 
 class AssertionResult(BaseModel):
     """Result of a single behavioral assertion."""
@@ -55,7 +66,7 @@ class AssertBehavior:
     def results(self) -> list[AssertionResult]:
         return list(self._results)
 
-    def mentions(self, concept: str, threshold: float = 0.45) -> AssertBehavior:
+    def mentions(self, concept: str, threshold: float = _DEFAULT_MENTIONS) -> AssertBehavior:
         """Assert that the output semantically mentions a concept.
 
         Uses embedding similarity, not exact string matching.
@@ -85,7 +96,7 @@ class AssertBehavior:
         )
         return self
 
-    def not_mentions(self, concept: str, threshold: float = 0.45) -> AssertBehavior:
+    def not_mentions(self, concept: str, threshold: float = _DEFAULT_NOT_MENTIONS) -> AssertBehavior:
         """Assert that the output does NOT semantically mention a concept."""
         from llm_behave.engines.semantic import get_semantic_engine
 
@@ -112,7 +123,7 @@ class AssertBehavior:
         )
         return self
 
-    def tone(self, expected_tone: str, threshold: float = 0.5) -> AssertBehavior:
+    def tone(self, expected_tone: str, threshold: float = _DEFAULT_TONE) -> AssertBehavior:
         """Assert that the output has a specific tone.
 
         Uses embedding similarity between the output and tone descriptions.
@@ -143,7 +154,7 @@ class AssertBehavior:
         )
         return self
 
-    def intent(self, expected_intent: str, threshold: float = 0.3) -> AssertBehavior:
+    def intent(self, expected_intent: str, threshold: float = _DEFAULT_INTENT) -> AssertBehavior:
         """Assert that the output's intent matches the expected description."""
         from llm_behave.engines.semantic import get_semantic_engine
 
@@ -189,6 +200,38 @@ class AssertBehavior:
         assert passed, (
             f"LLM did not call tool '{tool_name}'. "
             f"Tools called: {called_names}"
+        )
+        return self
+
+    def contradicts(self, other_text: str, threshold: float = _DEFAULT_CONTRADICTS) -> AssertBehavior:
+        """Assert that this output contradicts the given text.
+
+        Uses an offline NLI model. Useful for multi-turn consistency checks
+        (e.g. the LLM reversed a policy it stated earlier).
+        """
+        from llm_behave.engines.contradiction import get_contradiction_engine
+
+        engine = get_contradiction_engine()
+        score = engine.check_contradiction(other_text, self._text)
+        passed = score >= threshold
+
+        result = AssertionResult(
+            passed=passed,
+            assertion_type="contradicts",
+            expected=f"contradicts: {other_text[:60]}",
+            actual_summary=self._text[:100],
+            similarity_score=score,
+            message=f"Contradiction score {score:.3f} below threshold {threshold}"
+            if not passed
+            else "",
+        )
+        self._results.append(result)
+
+        assert passed, (
+            f"LLM output does not contradict the reference text. "
+            f"Contradiction score: {score:.3f} (threshold: {threshold})\n"
+            f"Reference: {other_text[:200]}\n"
+            f"Output:    {self._text[:200]}"
         )
         return self
 

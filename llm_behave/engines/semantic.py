@@ -13,8 +13,8 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# Singleton engine instance
-_engine: SemanticEngine | None = None
+# Multi-model engine cache: model_name -> SemanticEngine
+_engines: dict[str, SemanticEngine] = {}
 
 # Default model -- small (80MB), fast, works offline
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
@@ -93,8 +93,7 @@ class SemanticEngine:
 
 
 def get_semantic_engine(model_name: str = DEFAULT_MODEL) -> SemanticEngine:
-    """Get the singleton semantic engine instance."""
-    global _engine
-    if _engine is None or _engine.model_name != model_name:
-        _engine = SemanticEngine(model_name)
-    return _engine
+    """Get or create a cached SemanticEngine for the given model."""
+    if model_name not in _engines:
+        _engines[model_name] = SemanticEngine(model_name)
+    return _engines[model_name]
