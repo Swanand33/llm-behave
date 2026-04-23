@@ -48,6 +48,7 @@ pip install llm-behave[semantic]
 | `tone()` | Detect empathetic / professional / rude / helpful etc. |
 | `intent()` | Does the response intend to help? refuse? apologize? |
 | `calls_tool()` | Assert which tool the LLM called |
+| `contradicts()` | Assert the output contradicts a reference statement (NLI) |
 | `ConversationTest` | Multi-turn testing with memory, contradiction detection |
 | `DriftTest` | Save baseline behavior, detect regressions in CI |
 
@@ -80,6 +81,15 @@ assert_behavior(output) \
     .mentions("refund") \
     .tone("empathetic") \
     .not_mentions("competitor")
+```
+
+### Contradiction assertions
+
+Assert that an output contradicts a previous statement — useful for detecting policy reversals across conversation turns.
+
+```python
+# Turn 1 said refunds are available. Does turn 3 contradict that?
+assert_behavior(turn_3_response).contradicts("Refunds are always available within 30 days.")
 ```
 
 ### Tool call assertions
@@ -187,7 +197,8 @@ llm-behave uses [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformer
 - **`mentions()` / `not_mentions()`** — splits text into sentences, computes max cosine similarity between any sentence and your concept
 - **`tone()`** — batch-encodes input text against example sentences for each tone, returns max similarity
 - **`intent()`** — semantic similarity between output and your intent description
-- **`contradicts_turn()`** — NLI (Natural Language Inference) model detects logical contradictions
+- **`contradicts()`** — NLI (Natural Language Inference) model detects if the output contradicts a reference statement
+- **`contradicts_turn()`** — same NLI model, applied across conversation turns
 
 Models load **lazily** on first use and are cached for the rest of the test session. Import time stays fast.
 
