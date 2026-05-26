@@ -43,11 +43,11 @@ rought.txt
 .env.local
 
 # Internal / private files (not for public GitHub)
+# All private/secret/internal docs live in NOD/ — never pushed.
+NOD/
+# CLAUDE.md and AGENTS.md stay at root so tooling auto-loads them, but are never pushed.
 CLAUDE.md
-ideas.txt
-PROJECT_LOG.txt
-PLAIN_ENGLISH_GUIDE.txt
-launch/
+AGENTS.md
 .claudeignore
 .vscode/
 .claude/
