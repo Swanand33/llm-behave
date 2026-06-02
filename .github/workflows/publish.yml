@@ -21,6 +21,17 @@ jobs:
       - name: Build package
         run: python -m build --no-isolation
 
+      - name: Clean-room smoke test (install built wheel, import it)
+        # Catches the v0.1.0 failure: a wheel whose package folder name does not
+        # match the import name. Tests the ARTIFACT, not the source tree — so it
+        # runs from /tmp where the llm_behave/ source folder is NOT importable.
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install --upgrade pip
+          /tmp/smoke/bin/pip install dist/*.whl
+          cd /tmp
+          /tmp/smoke/bin/python -c "import llm_behave; from llm_behave import assert_behavior; assert_behavior('the weather is sunny', tool_calls=[{'name': 'get_weather', 'arguments': {}}]).calls_tool('get_weather'); print('OK: llm_behave', llm_behave.__version__)"
+
       - name: Upload to PyPI
         run: twine upload dist/*
         env:
