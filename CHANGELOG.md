@@ -2,6 +2,23 @@
 
 All notable changes to llm-behave will be documented here.
 
+## [0.2.0] — 2026-07-02
+
+### Added
+- **RAG / grounding assertions** (offline NLI entailment — no judge LLM, no API):
+  - `.grounded_in(context)` — assert every claim in the output is entailed by the retrieved context.
+  - `.no_hallucination(context)` — assert the output introduces no claims unsupported by the context; failure output lists the specific hallucinated sentences.
+  - `.cites(source_id)` — assert the output references a given source id / URL / marker (case-insensitive).
+- **Structured-output assertions** (pure Python, no model needed):
+  - `.returns_valid_json()` — parse output as JSON, tolerating ```json fenced blocks.
+  - `.matches_schema(pydantic_model)` — validate output JSON against a Pydantic model.
+  - `.has_keys([...])` — assert the output JSON object contains the given keys.
+- `ContradictionEngine.max_entailment(hypothesis, premises)` and `.check_entailment(premise, hypothesis)` — batched NLI entailment scoring (softmax over [contradiction, entailment, neutral]).
+- `SemanticEngine.top_sentence_similarities(text, query, k)` — returns the top-k (sentence, score) pairs.
+
+### Changed
+- `.mentions()`, `.not_mentions()`, and `.intent()` failure messages now show the **top-3 closest sentences with their scores**, answering "was it 0.41 or 0.05?" instead of reporting a lone max.
+
 ## [0.1.2] — 2026-04-22
 
 ### Added

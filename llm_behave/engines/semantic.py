@@ -80,16 +80,35 @@ class SemanticEngine:
         return float(dot / (norm_a * norm_b))
 
 
+    def top_sentence_similarities(
+        self, text: str, query: str, k: int = 3
+    ) -> list[tuple[str, float]]:
+        """Return the top-k (sentence, similarity) pairs for query against text.
+
+        Splits text into sentences, scores each against the query, and returns
+        the k highest-scoring pairs sorted descending. Used both for the max
+        score and for explaining *why* an assertion failed (which sentences
+        were closest, and by how much).
+        """
+        sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
+        if not sentences:
+            sentences = [text.strip()] if text.strip() else []
+        if not sentences:
+            return []
+        scored = [(sentence, self.similarity(sentence, query)) for sentence in sentences]
+        scored.sort(key=lambda pair: pair[1], reverse=True)
+        return scored[:k]
+
     def max_sentence_similarity(self, text: str, query: str) -> float:
         """Compute max cosine similarity between query and any sentence in text.
 
         Splits text into sentences and returns the highest similarity found.
         More accurate than whole-text comparison for paragraph inputs.
         """
-        sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
-        if not sentences:
+        top = self.top_sentence_similarities(text, query, k=1)
+        if not top:
             return self.similarity(text, query)
-        return max(self.similarity(sentence, query) for sentence in sentences)
+        return top[0][1]
 
 
 def get_semantic_engine(model_name: str = DEFAULT_MODEL) -> SemanticEngine:

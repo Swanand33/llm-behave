@@ -95,3 +95,30 @@ class TestMultiModelCache:
         # Original engine should still be in cache, not replaced
         assert get_semantic_engine("all-MiniLM-L6-v2") is e1
         del _engines[fake]
+
+
+class TestTopSentenceSimilarities:
+    """Test top-k sentence scoring used for failure diagnostics."""
+
+    def test_returns_sorted_descending(self, engine):
+        text = "I love pizza. The weather is nice. Refunds take 30 days."
+        top = engine.top_sentence_similarities(text, "refund policy", k=3)
+        scores = [s for _, s in top]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_respects_k(self, engine):
+        text = "One. Two. Three. Four."
+        assert len(engine.top_sentence_similarities(text, "number", k=2)) == 2
+
+    def test_best_sentence_is_most_relevant(self, engine):
+        text = "The sky is blue. You can request a refund within 30 days."
+        best_sentence, _ = engine.top_sentence_similarities(text, "refund", k=3)[0]
+        assert "refund" in best_sentence
+
+    def test_max_sentence_similarity_matches_top1(self, engine):
+        text = "Hello there. Refunds take 30 days."
+        top = engine.top_sentence_similarities(text, "refund", k=1)
+        assert engine.max_sentence_similarity(text, "refund") == pytest.approx(top[0][1])
+
+    def test_empty_text_returns_empty(self, engine):
+        assert engine.top_sentence_similarities("", "refund") == []

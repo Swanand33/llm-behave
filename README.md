@@ -49,6 +49,12 @@ pip install llm-behave[semantic]
 | `intent()` | Does the response intend to help? refuse? apologize? |
 | `calls_tool()` | Assert which tool the LLM called |
 | `contradicts()` | Assert the output contradicts a reference statement (NLI) |
+| `grounded_in()` | Assert every claim is entailed by the retrieved context (offline RAG eval) |
+| `no_hallucination()` | Assert the output adds no claims unsupported by the context |
+| `cites()` | Assert the output references a given source id / URL / marker |
+| `returns_valid_json()` | Assert the output parses as JSON (tolerates ```json fences) |
+| `matches_schema()` | Validate output JSON against a Pydantic model |
+| `has_keys()` | Assert the output JSON object contains required keys |
 | `ConversationTest` | Multi-turn testing with memory, contradiction detection |
 | `DriftTest` | Save baseline behavior, detect regressions in CI |
 
@@ -90,6 +96,45 @@ Assert that an output contradicts a previous statement — useful for detecting 
 ```python
 # Turn 1 said refunds are available. Does turn 3 contradict that?
 assert_behavior(turn_3_response).contradicts("Refunds are always available within 30 days.")
+```
+
+### RAG / grounding assertions
+
+Verify a RAG answer is actually supported by the retrieved context — fully offline, no judge LLM, no API cost. Uses the same NLI model as `contradicts()`.
+
+```python
+context = retriever.get_docs("refund policy")   # your retrieved chunks
+answer = my_rag_app("How long do I have to return something?")
+
+# Every claim in the answer must be entailed by the context
+assert_behavior(answer).grounded_in(context)
+
+# No claim may go beyond the context (catches hallucinations)
+assert_behavior(answer).no_hallucination(context)
+
+# The answer must cite the expected source
+assert_behavior(answer).cites("doc-42")
+```
+
+On failure, `no_hallucination()` lists the specific unsupported sentences and their entailment scores, so a green check is trustworthy.
+
+### Structured-output assertions
+
+For LLMs that emit JSON. Pure Python — no model download needed.
+
+```python
+from pydantic import BaseModel
+
+class Order(BaseModel):
+    order_id: str
+    total: float
+    shipped: bool
+
+output = my_llm("Return the order as JSON")
+
+assert_behavior(output).returns_valid_json()
+assert_behavior(output).has_keys(["order_id", "total"])
+assert_behavior(output).matches_schema(Order)
 ```
 
 ### Tool call assertions
@@ -199,6 +244,8 @@ llm-behave uses [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformer
 - **`intent()`** — semantic similarity between output and your intent description
 - **`contradicts()`** — NLI (Natural Language Inference) model detects if the output contradicts a reference statement
 - **`contradicts_turn()`** — same NLI model, applied across conversation turns
+- **`grounded_in()` / `no_hallucination()`** — the same NLI model, run the other direction: each output sentence must be *entailed* by some context sentence, else it's flagged as ungrounded
+- **`returns_valid_json()` / `matches_schema()` / `has_keys()`** — pure Python + Pydantic, no model needed
 
 Models load **lazily** on first use and are cached for the rest of the test session. Import time stays fast.
 
