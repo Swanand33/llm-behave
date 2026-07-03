@@ -1,0 +1,93 @@
+"""Tests for RAG / grounding assertions.
+
+These require sentence-transformers + the NLI model (the [semantic] extra).
+They validate grounded_in(), no_hallucination(), and cites().
+"""
+
+from __future__ import annotations
+
+import importlib.util
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    importlib.util.find_spec("sentence_transformers") is None,
+    reason="requires the [semantic] extra (sentence-transformers + torch)",
+)
+
+from llm_behave.core.assertions import assert_behavior
+from llm_behave.engines.contradiction import get_contradiction_engine
+
+CONTEXT = (
+    "The refund window is 30 days from the delivery date. "
+    "Refunds are issued to the original payment method. "
+    "Shipping fees are non-refundable."
+)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _warm_engine():
+    """Load the NLI model once for the module (loading is slow)."""
+    get_contradiction_engine()._load_model()
+
+
+class TestGroundedIn:
+    def test_grounded_answer_passes(self):
+        answer = "You can get a refund within 30 days of delivery."
+        assert_behavior(answer).grounded_in(CONTEXT)
+
+    def test_ungrounded_claim_fails(self):
+        answer = "Refunds are processed within 24 hours and include free express shipping."
+        with pytest.raises(AssertionError, match="not grounded"):
+            assert_behavior(answer).grounded_in(CONTEXT)
+
+
+class TestNoHallucination:
+    def test_supported_answer_passes(self):
+        answer = "Shipping fees are non-refundable."
+        assert_behavior(answer).no_hallucination(CONTEXT)
+
+    def test_hallucinated_claim_fails(self):
+        answer = "We also offer a lifetime warranty on all products."
+        with pytest.raises(AssertionError, match="hallucinat"):
+            assert_behavior(answer).no_hallucination(CONTEXT)
+
+    def test_reports_the_hallucinated_sentence(self):
+        answer = "Refunds go to your original payment method. You also earn 500 loyalty points."
+        with pytest.raises(AssertionError, match="loyalty points"):
+            assert_behavior(answer).no_hallucination(CONTEXT)
+
+
+class TestCites:
+    def test_cites_source_id_passes(self):
+        answer = "According to the policy [doc-42], refunds take 30 days."
+        assert_behavior(answer).cites("doc-42")
+
+    def test_case_insensitive(self):
+        answer = "See KB-Article-7 for details."
+        assert_behavior(answer).cites("kb-article-7")
+
+    def test_missing_citation_fails(self):
+        answer = "Refunds take 30 days."
+        with pytest.raises(AssertionError, match="does not cite"):
+            assert_behavior(answer).cites("doc-42")
+
+
+class TestEntailmentEngine:
+    def test_max_entailment_prefers_supporting_sentence(self):
+        engine = get_contradiction_engine()
+        premises = [
+            "The sky is blue.",
+            "The refund window is 30 days from delivery.",
+        ]
+        score, support = engine.max_entailment(
+            "Customers have 30 days to request a refund.", premises
+        )
+        assert score > 0.5
+        assert "refund window" in support
+
+    def test_max_entailment_empty_premises(self):
+        engine = get_contradiction_engine()
+        score, support = engine.max_entailment("anything", [])
+        assert score == 0.0
+        assert support == ""

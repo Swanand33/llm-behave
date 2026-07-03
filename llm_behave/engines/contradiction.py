@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import logging
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 _engine: ContradictionEngine | None = None
@@ -59,6 +61,46 @@ class ContradictionEngine:
             contradiction_score = float(scores[0])
 
         return contradiction_score
+
+    def check_entailment(self, premise: str, hypothesis: str) -> float:
+        """Return the entailment probability that `premise` supports `hypothesis`.
+
+        This powers grounding/hallucination checks: a claim is "grounded" when
+        some piece of the retrieved context entails it. Returns a probability
+        in [0, 1] (softmax over [contradiction, entailment, neutral]).
+        """
+        return self.max_entailment(hypothesis, [premise])[0]
+
+    def max_entailment(
+        self, hypothesis: str, premises: list[str]
+    ) -> tuple[float, str]:
+        """Return the best entailment score for `hypothesis` over `premises`.
+
+        Scores every (premise, hypothesis) pair in a single batched forward
+        pass and returns (best_score, best_premise) — the context sentence that
+        most strongly supports the claim.
+        """
+        self._load_model()
+
+        premises = [p for p in premises if p and p.strip()]
+        if not premises:
+            return 0.0, ""
+
+        pairs = [(premise, hypothesis) for premise in premises]
+        raw = np.asarray(self._model.predict(pairs))
+
+        if raw.ndim == 1:
+            # Single-score model: no separable entailment class available.
+            entailment = raw.astype(float)
+        else:
+            # Softmax over [contradiction, entailment, neutral]; take entailment.
+            shifted = raw - raw.max(axis=1, keepdims=True)
+            probs = np.exp(shifted)
+            probs /= probs.sum(axis=1, keepdims=True)
+            entailment = probs[:, 1]
+
+        best_idx = int(np.argmax(entailment))
+        return float(entailment[best_idx]), premises[best_idx]
 
 
 def get_contradiction_engine(model_name: str = DEFAULT_NLI_MODEL) -> ContradictionEngine:
