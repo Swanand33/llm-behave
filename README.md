@@ -89,6 +89,8 @@ assert_behavior(output) \
     .not_mentions("competitor")
 ```
 
+When `mentions()`, `not_mentions()`, or `intent()` fail, the error shows the **top-3 closest sentences with their similarity scores** — so you can see whether it was a near-miss (0.41) or nowhere close (0.05), instead of guessing from a single number.
+
 ### Contradiction assertions
 
 Assert that an output contradicts a previous statement — useful for detecting policy reversals across conversation turns.
