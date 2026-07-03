@@ -1,5 +1,10 @@
 # llm-behave
 
+[![PyPI version](https://img.shields.io/pypi/v/llm-behave.svg)](https://pypi.org/project/llm-behave/)
+[![Python versions](https://img.shields.io/pypi/pyversions/llm-behave.svg)](https://pypi.org/project/llm-behave/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Swanand33/llm-behave/blob/main/LICENSE)
+[![Tests](https://img.shields.io/badge/tests-164%20passing-brightgreen.svg)](https://github.com/Swanand33/llm-behave)
+
 **Behavioral testing for LLM applications. A pytest plugin.**
 
 No LLM judge. No API cost. Offline models. Works with any provider.
