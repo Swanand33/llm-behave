@@ -7,14 +7,16 @@
 
 **Behavioral testing for LLM applications. A pytest plugin.**
 
-No LLM judge. No API cost. Offline models. Works with any provider.
+No judge LLM. No API cost. Offline models. Works with any provider.
 
 ```python
-def test_support_bot():
-    output = my_support_bot("I want a refund for order 1234")
+def test_rag_answer():
+    context = retriever.get_docs("refund policy")
+    answer = my_rag_app("How long do I have to return something?")
 
-    assert_behavior(output) \
-        .mentions("refund policy") \
+    assert_behavior(answer) \
+        .grounded_in(context) \          # every claim entailed by context
+        .no_hallucination(context) \     # flags unsupported claims
         .tone("empathetic") \
         .not_mentions("competitor")
 ```
@@ -24,11 +26,11 @@ def test_support_bot():
 ## Why llm-behave?
 
 Most LLM testing tools either:
-- Use another LLM to judge the output (expensive, slow, circular)
+- Use another LLM to judge the output — Ragas, DeepEval, etc. need an API key and call a judge LLM (expensive, slow, circular)
 - Only do exact string matching (misses semantic meaning)
 - Don't support multi-turn conversations at all
 
-**llm-behave** uses small offline transformer models (80MB, runs on CPU) to understand meaning — no API calls, no cost, no internet required during tests.
+**llm-behave** uses small offline transformer models (80MB embeddings + a small NLI model, both CPU) to understand meaning — no API calls, no API key, no cost, no internet required during tests. That includes RAG grounding and hallucination detection: `grounded_in()` / `no_hallucination()` check every claim against retrieved context using the same offline NLI model, no judge LLM required.
 
 ---
 
@@ -48,15 +50,15 @@ pip install llm-behave[semantic]
 
 | Feature | What it does |
 |---|---|
+| `grounded_in()` | Assert every claim is entailed by the retrieved context (offline RAG eval) |
+| `no_hallucination()` | Assert the output adds no claims unsupported by the context |
+| `cites()` | Assert the output references a given source id / URL / marker |
 | `mentions()` | Semantic similarity — "money back" matches "refund" |
 | `not_mentions()` | Assert a topic is NOT brought up |
 | `tone()` | Detect empathetic / professional / rude / helpful etc. |
 | `intent()` | Does the response intend to help? refuse? apologize? |
 | `calls_tool()` | Assert which tool the LLM called |
 | `contradicts()` | Assert the output contradicts a reference statement (NLI) |
-| `grounded_in()` | Assert every claim is entailed by the retrieved context (offline RAG eval) |
-| `no_hallucination()` | Assert the output adds no claims unsupported by the context |
-| `cites()` | Assert the output references a given source id / URL / marker |
 | `returns_valid_json()` | Assert the output parses as JSON (tolerates ```json fences) |
 | `matches_schema()` | Validate output JSON against a Pydantic model |
 | `has_keys()` | Assert the output JSON object contains required keys |
