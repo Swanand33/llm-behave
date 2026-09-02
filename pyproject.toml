@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "Swanand Potnis", email = "swanandpotnis500@gmail.com" },
+    { name = "Swanand Potnis", email = "workwithswanand@gmail.com" },
 ]
 keywords = ["pytest", "llm", "testing", "ai", "langchain", "openai", "anthropic", "behavioral-testing"]
 classifiers = [
