@@ -14,11 +14,11 @@ def test_rag_answer():
     context = retriever.get_docs("refund policy")
     answer = my_rag_app("How long do I have to return something?")
 
-    assert_behavior(answer) \
-        .grounded_in(context) \          # every claim entailed by context
-        .no_hallucination(context) \     # flags unsupported claims
-        .tone("empathetic") \
-        .not_mentions("competitor")
+    (assert_behavior(answer)
+        .grounded_in(context)          # every claim entailed by context
+        .no_hallucination(context)     # flags unsupported claims
+        .tone("empathetic")
+        .not_mentions("competitor"))
 ```
 
 ---
