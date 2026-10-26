@@ -12,9 +12,14 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_engine: ContradictionEngine | None = None
+# Multi-model engine cache: model_name -> ContradictionEngine
+_engines: dict[str, ContradictionEngine] = {}
 
 DEFAULT_NLI_MODEL = "cross-encoder/nli-deberta-v3-small"
+
+# Label order of the NLI cross-encoder's output: [contradiction, entailment, neutral]
+_CONTRADICTION = 0
+_ENTAILMENT = 1
 
 
 class ContradictionEngine:
@@ -41,26 +46,33 @@ class ContradictionEngine:
                 "Install it with: pip install llm-behave[semantic]"
             )
 
+    def _predict_probs(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        """Score (premise, hypothesis) pairs in one batched forward pass.
+
+        The cross-encoder returns raw logits (e.g. 6.5 / -4.3), so they are
+        softmaxed into probabilities over [contradiction, entailment, neutral].
+        A single-score model has no separable classes and is returned as-is
+        with shape (n,).
+        """
+        self._load_model()
+        raw = np.asarray(self._model.predict(pairs))
+        if raw.ndim == 1:
+            return raw.astype(float)
+        shifted = raw - raw.max(axis=1, keepdims=True)
+        probs = np.exp(shifted)
+        return probs / probs.sum(axis=1, keepdims=True)
+
     def check_contradiction(self, text_a: str, text_b: str) -> float:
         """Check if text_b contradicts text_a.
 
         Returns:
-            Contradiction score between 0 and 1.
+            Contradiction probability between 0 and 1.
             Higher = more likely a contradiction.
         """
-        self._load_model()
-
-        # NLI models return scores for [contradiction, entailment, neutral]
-        scores = self._model.predict([(text_a, text_b)])
-
-        if hasattr(scores[0], "__len__"):
-            # Multi-class output: [contradiction, entailment, neutral]
-            contradiction_score = float(scores[0][0])
-        else:
-            # Single score output
-            contradiction_score = float(scores[0])
-
-        return contradiction_score
+        probs = self._predict_probs([(text_a, text_b)])
+        if probs.ndim == 1:
+            return float(probs[0])
+        return float(probs[0, _CONTRADICTION])
 
     def check_entailment(self, premise: str, hypothesis: str) -> float:
         """Return the entailment probability that `premise` supports `hypothesis`.
@@ -80,32 +92,19 @@ class ContradictionEngine:
         pass and returns (best_score, best_premise) — the context sentence that
         most strongly supports the claim.
         """
-        self._load_model()
-
         premises = [p for p in premises if p and p.strip()]
         if not premises:
             return 0.0, ""
 
-        pairs = [(premise, hypothesis) for premise in premises]
-        raw = np.asarray(self._model.predict(pairs))
-
-        if raw.ndim == 1:
-            # Single-score model: no separable entailment class available.
-            entailment = raw.astype(float)
-        else:
-            # Softmax over [contradiction, entailment, neutral]; take entailment.
-            shifted = raw - raw.max(axis=1, keepdims=True)
-            probs = np.exp(shifted)
-            probs /= probs.sum(axis=1, keepdims=True)
-            entailment = probs[:, 1]
+        probs = self._predict_probs([(premise, hypothesis) for premise in premises])
+        entailment = probs if probs.ndim == 1 else probs[:, _ENTAILMENT]
 
         best_idx = int(np.argmax(entailment))
         return float(entailment[best_idx]), premises[best_idx]
 
 
 def get_contradiction_engine(model_name: str = DEFAULT_NLI_MODEL) -> ContradictionEngine:
-    """Get the singleton contradiction engine instance."""
-    global _engine
-    if _engine is None or _engine._model_name != model_name:
-        _engine = ContradictionEngine(model_name)
-    return _engine
+    """Get or create a cached ContradictionEngine for the given model."""
+    if model_name not in _engines:
+        _engines[model_name] = ContradictionEngine(model_name)
+    return _engines[model_name]

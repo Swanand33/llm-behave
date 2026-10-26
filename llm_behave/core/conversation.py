@@ -31,11 +31,16 @@ class ConversationResponse:
         return self._content
 
     def recalls(self, concept: str, threshold: float = 0.5) -> bool:
-        """Check if the response recalls/references a concept from conversation history."""
+        """Assert the response recalls/references a concept from conversation history.
+
+        Scores the concept against each sentence and takes the best match, so a
+        long response isn't diluted by its unrelated sentences.
+        Raises AssertionError if the concept is not recalled.
+        """
         from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
-        score = engine.similarity(self._content, concept)
+        score = engine.max_sentence_similarity(self._content, concept)
         if score < threshold:
             raise AssertionError(
                 f"Response does not recall '{concept}'. "
@@ -45,7 +50,13 @@ class ConversationResponse:
         return True
 
     def contradicts_turn(self, turn_number: int, threshold: float = 0.7) -> bool:
-        """Check if the response contradicts a specific earlier turn."""
+        """Return True if the response contradicts a specific earlier turn.
+
+        Unlike recalls(), this is a predicate and does not raise on its own --
+        wrap it: `assert response.contradicts_turn(2)` or
+        `assert not response.contradicts_turn(2)`.
+        `threshold` is the NLI contradiction probability (0 to 1).
+        """
         target_turn = None
         for turn in self._history:
             if turn.turn_number == turn_number:
@@ -64,7 +75,12 @@ class ConversationResponse:
         return contradiction_score >= threshold
 
     def consistent_tone_across_turns(self, threshold: float = 0.7) -> bool:
-        """Check if tone is consistent across all assistant turns."""
+        """Assert tone is consistent across all assistant turns.
+
+        Known limitation: this compares whole-response embeddings, so it
+        measures overall semantic similarity -- topic as well as tone.
+        Raises AssertionError if the average falls below threshold.
+        """
         from llm_behave.engines.tone import get_tone_engine
 
         engine = get_tone_engine()

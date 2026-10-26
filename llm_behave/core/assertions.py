@@ -4,16 +4,17 @@ from __future__ import annotations
 
 import functools
 import json
-import re
 from typing import Any, Callable
 
 from pydantic import BaseModel, ValidationError
+
+from llm_behave.engines.text import split_sentences
 
 # Default thresholds are intentionally different per assertion type:
 #   mentions / not_mentions — keyword-level signal, mid-range sensitivity
 #   intent               — semantic purpose is broader, needs a looser gate
 #   tone                 — style signal is subtle, needs a tighter gate
-#   contradicts          — NLI raw score; 0.5 is mid-point of [0, 1]
+#   contradicts          — NLI contradiction probability; 0.5 = more likely than not
 _DEFAULT_MENTIONS = 0.45
 _DEFAULT_NOT_MENTIONS = 0.45
 _DEFAULT_INTENT = 0.30
@@ -22,14 +23,6 @@ _DEFAULT_CONTRADICTS = 0.50
 #   grounded_in / no_hallucination — NLI entailment probability; a claim is
 #   considered supported when some context sentence entails it above this gate.
 _DEFAULT_GROUNDED = 0.50
-
-
-def _split_sentences(text: str) -> list[str]:
-    """Split text into non-empty, trimmed sentences on ., !, ? boundaries."""
-    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
-    if not sentences and text.strip():
-        return [text.strip()]
-    return sentences
 
 
 def _format_top_matches(matches: list[tuple[str, float]]) -> str:
@@ -389,8 +382,8 @@ class AssertBehavior:
         from llm_behave.engines.contradiction import get_contradiction_engine
 
         engine = get_contradiction_engine()
-        context_sentences = _split_sentences(context)
-        claims = _split_sentences(self._text)
+        context_sentences = split_sentences(context)
+        claims = split_sentences(self._text)
 
         grounded: list[tuple[str, float, str]] = []
         for claim in claims:

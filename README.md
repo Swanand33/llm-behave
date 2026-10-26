@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/llm-behave.svg)](https://pypi.org/project/llm-behave/)
 [![Python versions](https://img.shields.io/pypi/pyversions/llm-behave.svg)](https://pypi.org/project/llm-behave/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Swanand33/llm-behave/blob/main/LICENSE)
-[![Tests](https://img.shields.io/badge/tests-164%20passing-brightgreen.svg)](https://github.com/Swanand33/llm-behave)
+[![Tests](https://img.shields.io/badge/tests-182%20passing-brightgreen.svg)](https://github.com/Swanand33/llm-behave)
 
 **Behavioral testing for LLM applications. A pytest plugin.**
 
@@ -171,7 +171,11 @@ response = conv.say("When will it arrive?")
 assert response.recalls("order")
 assert response.recalls("Alex")
 
+# Did it reverse what it said in turn 2? (returns a bool -- wrap in assert)
+assert not response.contradicts_turn(2)
+
 # Is tone consistent across the whole conversation?
+# Note: currently compares overall meaning, so topic changes also lower the score.
 assert response.consistent_tone_across_turns(threshold=0.6)
 ```
 

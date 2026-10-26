@@ -77,25 +77,32 @@ class TestContradictsTurn:
         conv.say("When does my order arrive?")
         response = conv.say("Are you sure?")
 
-        # Turn 2 is the first assistant response
-        result = response.contradicts_turn(2)
-        # Should not contradict (both say Friday)
-        assert result is False or result is True  # depends on model confidence
+        # Turn 2 is the first assistant response; both say Friday
+        assert response.contradicts_turn(2) is False
 
     def test_contradiction_detected(self):
         agent = make_agent([
-            "Your order will arrive by Friday.",
-            "Your order will arrive by Wednesday.",
+            "Refunds are available within 30 days of purchase.",
+            "We never offer refunds under any circumstances.",
         ])
         conv = ConversationTest(agent=agent)
-        conv.say("When does my order arrive?")
-        response = conv.say("When exactly?")
+        conv.say("Can I get a refund?")
+        response = conv.say("Are you sure?")
 
-        # Turn 2 is first assistant response ("Friday")
-        # Response says "Wednesday" -- contradiction
-        # Note: NLI model may or may not catch this
-        score = response.contradicts_turn(2)
-        assert isinstance(score, bool)
+        # Turn 2 is the first assistant response -- a policy reversal
+        assert response.contradicts_turn(2) is True
+
+    def test_recalls_concept_in_long_response(self):
+        """recalls() scores per sentence, so filler sentences don't dilute it."""
+        agent = make_agent([
+            "Thanks for reaching out. We appreciate your patience. "
+            "Our team works hard every day. Your order 1234 ships tomorrow. "
+            "Have a wonderful afternoon and enjoy the weekend.",
+        ])
+        conv = ConversationTest(agent=agent)
+        response = conv.say("Where is my order?")
+
+        assert response.recalls("order 1234", threshold=0.6)
 
     def test_invalid_turn_number_raises(self):
         agent = make_agent(["Hello"])

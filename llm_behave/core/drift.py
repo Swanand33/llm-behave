@@ -97,8 +97,28 @@ class DriftTest:
 
         engine = get_semantic_engine()
 
-        scores = [engine.similarity(current_output, b) for b in baseline.outputs]
-        max_score = max(scores) if scores else 0.0
+        if baseline.model_name != engine.model_name:
+            raise ValueError(
+                f"Baseline '{baseline_name}' was recorded with model "
+                f"'{baseline.model_name}', but the current model is "
+                f"'{engine.model_name}'. Scores are not comparable across models -- "
+                "delete the baseline file and re-run the baseline test."
+            )
+
+        import numpy as np
+
+        if len(baseline.embeddings) == len(baseline.outputs) and baseline.embeddings:
+            # Reuse stored embeddings: only the current output needs encoding
+            current = engine.encode(current_output)
+            stored = np.asarray(baseline.embeddings)
+            norms = np.linalg.norm(stored, axis=1) * np.linalg.norm(current)
+            dots = stored @ current
+            scores = np.divide(dots, norms, out=np.zeros_like(dots), where=norms != 0)
+            max_score = float(scores.max())
+        else:
+            # Legacy baseline without embeddings
+            scores = [engine.similarity(current_output, b) for b in baseline.outputs]
+            max_score = max(scores) if scores else 0.0
 
         passed = max_score >= threshold
         return DriftResult(
@@ -123,9 +143,13 @@ class DriftTest:
         existing = DriftTest._load_baseline(name, directory)
 
         if existing:
+            if len(existing.embeddings) != len(existing.outputs):
+                # Legacy baseline without aligned embeddings: rebuild them once
+                existing.embeddings = [engine.encode(o).tolist() for o in existing.outputs]
             existing.outputs.append(text)
+            existing.embeddings.append(engine.encode(text).tolist())
             existing.outputs = existing.outputs[-existing.max_outputs:]
-            existing.embeddings = [engine.encode(o).tolist() for o in existing.outputs]
+            existing.embeddings = existing.embeddings[-existing.max_outputs:]
             data = existing.model_dump()
         else:
             data = DriftBaseline(
