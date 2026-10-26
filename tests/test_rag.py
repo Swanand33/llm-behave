@@ -91,3 +91,49 @@ class TestEntailmentEngine:
         score, support = engine.max_entailment("anything", [])
         assert score == 0.0
         assert support == ""
+
+
+class TestContradictionProbabilities:
+    """check_contradiction() must return a probability, not a raw logit (v0.2.1)."""
+
+    def test_contradiction_score_in_unit_interval(self):
+        engine = get_contradiction_engine()
+        contra = engine.check_contradiction(
+            "Refunds are allowed within 30 days.", "Refunds are never allowed."
+        )
+        agree = engine.check_contradiction(
+            "Refunds are allowed within 30 days.", "You can get a refund within 30 days."
+        )
+        assert 0.0 <= agree <= 1.0
+        assert 0.0 <= contra <= 1.0
+        assert contra > 0.9
+        assert agree < 0.1
+
+    def test_engines_cached_per_model(self):
+        from llm_behave.engines.contradiction import ContradictionEngine, _engines
+
+        default = get_contradiction_engine()
+        fake = "fake/nli-model"
+        _engines[fake] = ContradictionEngine(fake)
+        try:
+            assert get_contradiction_engine() is default
+        finally:
+            del _engines[fake]
+
+
+class TestGroundingWithNumbers:
+    """Prices, decimals and URLs must not be split into fake claims (v0.2.1)."""
+
+    PRICING = (
+        "The Pro plan costs $4.99 per month. "
+        "Full details are at example.com/pricing."
+    )
+
+    def test_price_claim_is_grounded(self):
+        assert_behavior("The Pro plan costs $4.99 per month.").grounded_in(self.PRICING)
+
+    def test_wrong_price_is_hallucination(self):
+        with pytest.raises(AssertionError, match="Hallucinated claims"):
+            assert_behavior("The Pro plan costs $9.99 per month.").no_hallucination(
+                self.PRICING
+            )

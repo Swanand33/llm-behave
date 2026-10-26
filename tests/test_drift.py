@@ -76,6 +76,40 @@ class TestDriftCompare:
         assert result.baseline_name == "test"
         assert isinstance(result.drift_score, float)
 
+    def test_compare_rejects_baseline_from_other_model(self, tmp_path):
+        DriftTest._save_baseline("test", "Hello world", tmp_path)
+        path = tmp_path / "test.json"
+        data = json.loads(path.read_text())
+        data["model_name"] = "some-other-model"
+        path.write_text(json.dumps(data))
+
+        with pytest.raises(ValueError, match="re-run the baseline test"):
+            DriftTest.compare("test", "Hello world", baseline_dir=tmp_path)
+
+    def test_compare_legacy_baseline_without_embeddings(self, tmp_path):
+        DriftTest._save_baseline("test", "We will process your refund within 5 days.", tmp_path)
+        path = tmp_path / "test.json"
+        data = json.loads(path.read_text())
+        data["embeddings"] = []
+        path.write_text(json.dumps(data))
+
+        result = DriftTest.compare(
+            "test", "We will process your refund within 5 days.", baseline_dir=tmp_path
+        )
+        assert result.drift_score > 0.99
+
+    def test_save_keeps_embeddings_aligned_with_ring_buffer(self, tmp_path):
+        for i in range(5):
+            DriftTest._save_baseline("ring", f"output number {i}", tmp_path, max_outputs=3)
+
+        baseline = DriftTest._load_baseline("ring", tmp_path)
+        assert baseline.outputs == ["output number 2", "output number 3", "output number 4"]
+        assert len(baseline.embeddings) == 3
+
+        # Stored embeddings must match the outputs they sit next to
+        result = DriftTest.compare("ring", "output number 4", baseline_dir=tmp_path)
+        assert result.drift_score > 0.99
+
 
 class TestDriftDecorator:
     """Test the @DriftTest.baseline decorator."""

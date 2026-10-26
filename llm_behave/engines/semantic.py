@@ -7,9 +7,10 @@ and drift detection. Uses offline models -- no LLM judge, no API cost.
 from __future__ import annotations
 
 import logging
-import re
 
 import numpy as np
+
+from llm_behave.engines.text import split_sentences
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,6 @@ class SemanticEngine:
 
         return float(dot / (norm_a * norm_b))
 
-
     def top_sentence_similarities(
         self, text: str, query: str, k: int = 3
     ) -> list[tuple[str, float]]:
@@ -90,12 +90,19 @@ class SemanticEngine:
         score and for explaining *why* an assertion failed (which sentences
         were closest, and by how much).
         """
-        sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
-        if not sentences:
-            sentences = [text.strip()] if text.strip() else []
+        sentences = split_sentences(text)
         if not sentences:
             return []
-        scored = [(sentence, self.similarity(sentence, query)) for sentence in sentences]
+
+        # One batched forward pass for the query and every sentence
+        self._load_model()
+        embeddings = self._model.encode([query] + sentences, convert_to_numpy=True)
+        query_emb, sentence_embs = embeddings[0], embeddings[1:]
+        norms = np.linalg.norm(sentence_embs, axis=1) * np.linalg.norm(query_emb)
+        dots = sentence_embs @ query_emb
+        scores = np.divide(dots, norms, out=np.zeros_like(dots), where=norms != 0)
+
+        scored = [(sentence, float(score)) for sentence, score in zip(sentences, scores)]
         scored.sort(key=lambda pair: pair[1], reverse=True)
         return scored[:k]
 

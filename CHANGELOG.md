@@ -2,6 +2,23 @@
 
 All notable changes to llm-behave will be documented here.
 
+## [0.2.1] — 2026-10-26
+
+### Fixed
+- **`contradicts()` / `contradicts_turn()` now score a real probability.** `ContradictionEngine.check_contradiction()` returned the NLI model's raw logit (e.g. `6.55` / `-4.34`), not a 0–1 score, so thresholds like `0.5` and `0.7` only worked by accident. It is now softmaxed over [contradiction, entailment, neutral], matching `max_entailment()`. If you passed a custom `threshold` tuned against the old logits, re-tune it.
+- **Sentence splitting no longer breaks on every period.** `"$4.99"`, `"v2.1"`, `"example.com"` and `"e.g."` used to be split into fragments that `grounded_in()` / `no_hallucination()` then scored as separate claims. Sentences now end only at `.`/`!`/`?` followed by whitespace, plus blank lines and list items. Shared by the assertions and `SemanticEngine`.
+- `ConversationResponse.recalls()` scores the concept per sentence (max), so long responses are no longer diluted by unrelated sentences.
+- `get_contradiction_engine()` caches one engine per model name instead of replacing a single instance (same fix `get_semantic_engine()` got in 0.1.2).
+- `DriftTest.compare()` raises `ValueError` when the baseline was recorded with a different embedding model, instead of silently comparing incompatible scores.
+
+### Changed
+- `DriftTest.compare()` reuses the embeddings stored in the baseline instead of re-encoding every output; saving a baseline encodes only the new output.
+- `SemanticEngine.top_sentence_similarities()` encodes the query and all sentences in one batched forward pass.
+- CI runs the test suite on Python 3.10, 3.11 and 3.12.
+
+### Known limitations
+- `consistent_tone_across_turns()` compares whole-response embeddings, so it measures overall semantic similarity (topic as well as tone). A dedicated tone comparison is planned.
+
 ## [0.2.0] — 2026-07-02
 
 ### Added
