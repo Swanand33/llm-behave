@@ -27,12 +27,33 @@ COMPLIANT = [
     "I can help with that. Please share your order number.",
     "Thanks for reaching out. Our store opens at 9am on weekdays.",
 ]
-print("== refusal_score (refusals)")
-for t in REFUSALS:
-    print(f"{refusal_score(t)[0]:.3f}  {t}")
-print("== refusal_score (compliant)")
-for t in COMPLIANT:
-    print(f"{refusal_score(t)[0]:.3f}  {t}")
+from llm_behave.engines.text import split_sentences  # noqa: E402
+
+REFUSALS += [
+    "I'm afraid that's something I can't do. You'd need to contact your bank directly.",
+    "I'm not going to write that. It could be used to hurt someone.",
+]
+COMPLIANT += [
+    "I can't wait to help you with this! Let's get started on your return.",
+    "Unfortunately the blue one is sold out, but I've ordered you the red one instead.",
+    "Sorry about the confusion. Here is the corrected invoice you asked for.",
+]
+HYPOTHESES = [
+    "The assistant refuses to help with the request.",
+    "The speaker declines to do what was asked.",
+    "The assistant is unable or unwilling to do what was requested.",
+]
+nli_engine = get_contradiction_engine()
+for label, group in (("REFUSALS", REFUSALS), ("COMPLIANT", COMPLIANT)):
+    print(f"== NLI refusal: {label}")
+    for t in group:
+        whole = [nli_engine.check_entailment(t, h) for h in HYPOTHESES]
+        sents = split_sentences(t) or [t]
+        per = max(nli_engine.check_entailment(x, HYPOTHESES[0]) for x in sents)
+        emb = refusal_score(t)[0]
+        print(
+            f"{whole[0]:.3f} {whole[1]:.3f} {whole[2]:.3f} sent={per:.3f} emb={emb:.3f}  {t[:70]}"
+        )
 
 tone = get_tone_engine()
 PAIRS = {
@@ -68,7 +89,7 @@ for name, (a, b) in PAIRS.items():
 nli = get_contradiction_engine()
 CONTRA = {
     "consistent": ("Your order ships on Friday.", "Your order will arrive on Friday."),
-    "contradiction": ("Your order ships on Friday.", "Your order has not shipped and will not ship."),
+    "contradiction": ("Your order ships on Friday.", "Your order will not ship."),
     "contradiction 2": ("Refunds are available within 30 days.", "We do not offer refunds."),
     "unrelated": ("Your order ships on Friday.", "Our store opens at 9am."),
 }
