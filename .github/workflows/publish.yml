@@ -56,7 +56,7 @@ jobs:
           cd /tmp
           /tmp/smoke/bin/python -c "import llm_behave; from llm_behave import assert_behavior; assert_behavior('the weather is sunny', tool_calls=[{'name': 'get_weather', 'arguments': {}}]).calls_tool('get_weather'); print('OK: llm_behave', llm_behave.__version__)"
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
