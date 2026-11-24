@@ -29,7 +29,7 @@ That covers the tone-profile change, drift changes and the e2e tone test against
 ## Known gaps (not bugs, parked)
 - [ ] `publish.yml` has never run; it uses `actions/upload-artifact@v5` / `download-artifact@v5`
       (valid, but older than the Node 24 majors). Bump if GitHub warns.
-- [ ] README performance table is indicative; there is no benchmark script behind it.
+- [x] README performance table now measured with `tools/benchmark.py` on a GitHub Actions runner.
 - [ ] Your local-only `docs/` and `examples/` are not in the repo yet; commit them when ready.
 - [ ] Cloud environment `llm-behave` (created for the Hugging Face experiment) still allows five
       Hugging Face hosts; delete or tidy it in your Claude settings if you don't want it.

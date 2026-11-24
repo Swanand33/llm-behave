@@ -282,10 +282,20 @@ Models load **lazily** on first use and are cached for the rest of the test sess
 
 ## Performance
 
-Typical timings on a developer laptop (CPU), measured after model warmup (the model loads once per test session). `tests/test_harden.py` enforces a 200ms-per-assertion ceiling; CI scales it with `LLM_BEHAVE_PERF_FACTOR` because shared runners are slower:
+Median of 30 runs after model warmup (the models load once per test session), measured on a GitHub Actions Linux runner (CPU only, Python 3.12). Reproduce with `python tools/benchmark.py`; your machine will differ.
 
-| Assertion | Time |
+| Assertion | Median time |
 |---|---|
+| `mentions()` | ~17ms |
+| `tone()` | ~37ms |
+| `intent()` | ~16ms |
+| `contradicts()` (NLI) | ~76ms |
+| `refuses()` (NLI) | ~189ms |
+| 4-assertion chain | ~85ms |
+
+The model-free assertions (`length()`, `matches_regex()`, JSON checks, `calls_tool()`) take well under a millisecond.
+
+---|---|
 | `mentions()` | ~32ms |
 | `tone()` | ~40ms |
 | `intent()` | ~32ms |

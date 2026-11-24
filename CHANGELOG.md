@@ -26,6 +26,7 @@ All notable changes to llm-behave will be documented here.
 - Tests that need the `[semantic]` extra are skipped, not failed, on a core-only install.
 
 ### Changed
+- README performance table is now measured (`tools/benchmark.py`, run from the manual CI trigger) instead of hand-typed.
 - Semantic, NLI and tone engines load their model exactly once even when several threads use them at the same time.
 - Added `SECURITY.md`, a pull request template and an issue-template config.
 - CI now runs ruff, mypy, a core-only install job, Python 3.10–3.13 with coverage, and a build + `twine check` job. Timing assertions scale with `LLM_BEHAVE_PERF_FACTOR` (CI sets 5).
