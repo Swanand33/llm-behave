@@ -91,6 +91,10 @@ jobs:
       - name: Run full test suite
         run: python -m pytest tests/ -q --cov=llm_behave --cov-report=term-missing
 
+      - name: Benchmark assertion latency (manual runs only)
+        if: github.event_name == 'workflow_dispatch' && matrix.python-version == '3.12'
+        run: python tools/benchmark.py
+
   build:
     name: Build and verify distribution
     runs-on: ubuntu-latest
