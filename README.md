@@ -293,7 +293,7 @@ Median of 30 runs after model warmup (the models load once per test session), me
 | `refuses()` (NLI) | ~189ms |
 | 4-assertion chain | ~85ms |
 
-The model-free assertions (`length()`, `matches_regex()`, JSON checks, `calls_tool()`) take well under a millisecond.
+The model-free assertions (`length()`, `matches_regex()`, JSON checks, `calls_tool()`) take a few microseconds (measured locally, median of 2000 runs).
 
 ---|---|
 | `mentions()` | ~32ms |
