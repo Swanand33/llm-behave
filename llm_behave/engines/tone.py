@@ -7,6 +7,8 @@ This supports arbitrary tone labels: empathetic, professional, friendly, etc.
 
 from __future__ import annotations
 
+import numpy as np
+
 _engine: ToneEngine | None = None
 
 # Tone descriptions -- fallback for unknown tones
@@ -91,7 +93,30 @@ TONE_EXAMPLES: dict[str, list[str]] = {
 
 
 class ToneEngine:
-    """Tone detection via embedding similarity against tone descriptions."""
+    """Tone detection via embedding similarity against tone examples."""
+
+    def __init__(self) -> None:
+        # Example embeddings are cached per semantic model name
+        self._example_cache: dict[str, np.ndarray] = {}
+
+    @staticmethod
+    def _labels() -> list[str]:
+        return list(TONE_EXAMPLES)
+
+    def _example_embeddings(self, engine) -> np.ndarray:
+        """Embeddings of every example sentence, in TONE_EXAMPLES order (cached)."""
+        cached = self._example_cache.get(engine.model_name)
+        if cached is None:
+            flat = [ex for label in self._labels() for ex in TONE_EXAMPLES[label]]
+            cached = engine.encode_batch(flat)
+            self._example_cache[engine.model_name] = cached
+        return cached
+
+    @staticmethod
+    def _cosine(vec: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+        norms = np.linalg.norm(matrix, axis=1) * np.linalg.norm(vec)
+        dots = matrix @ vec
+        return np.divide(dots, norms, out=np.zeros_like(dots), where=norms != 0)
 
     def check_tone(self, text: str, expected_tone: str) -> float:
         """Check how well text matches an expected tone.
@@ -116,29 +141,45 @@ class ToneEngine:
             return engine.similarity(text, fallback)
 
         # Batch encode all examples + text in one forward pass for speed
-        import numpy as np
-        engine._load_model()
-        all_texts = [text] + examples
-        embeddings = engine._model.encode(all_texts, convert_to_numpy=True)
-        text_emb = embeddings[0]
-        example_embs = embeddings[1:]
+        embeddings = engine.encode_batch([text] + examples)
+        return float(self._cosine(embeddings[0], embeddings[1:]).max())
 
-        scores = []
-        for emb in example_embs:
-            dot = np.dot(text_emb, emb)
-            norm = np.linalg.norm(text_emb) * np.linalg.norm(emb)
-            scores.append(float(dot / norm) if norm > 0 else 0.0)
-        return max(scores)
-
-    def tone_similarity(self, text_a: str, text_b: str) -> float:
-        """Check how similar the tone is between two texts.
-
-        Used for consistent_tone_across_turns().
-        """
+    def tone_profile(self, text: str) -> dict[str, float]:
+        """Score text against every known tone (best-matching example per tone)."""
         from llm_behave.engines.semantic import get_semantic_engine
 
         engine = get_semantic_engine()
-        return engine.similarity(text_a, text_b)
+        example_embs = self._example_embeddings(engine)
+        scores = self._cosine(engine.encode_batch([text])[0], example_embs)
+
+        profile: dict[str, float] = {}
+        offset = 0
+        for label in self._labels():
+            count = len(TONE_EXAMPLES[label])
+            profile[label] = float(scores[offset:offset + count].max())
+            offset += count
+        return profile
+
+    def tone_similarity(self, text_a: str, text_b: str) -> float:
+        """How similar the *tone* of two texts is, from 0 to 1.
+
+        Compares tone profiles rather than raw embeddings: each text is scored
+        against every tone, the profile is centred (so a text's general
+        similarity to "tone-like" sentences cancels out), and the cosine of the
+        two centred profiles is returned. Two replies on different topics but in
+        the same register score high; a polite reply followed by a rude one
+        scores low. Used by consistent_tone_across_turns().
+        """
+        labels = self._labels()
+        profile_a, profile_b = self.tone_profile(text_a), self.tone_profile(text_b)
+        a = np.array([profile_a[label] for label in labels])
+        b = np.array([profile_b[label] for label in labels])
+        a, b = a - a.mean(), b - b.mean()
+        norm_a, norm_b = np.linalg.norm(a), np.linalg.norm(b)
+        if norm_a < 1e-6 or norm_b < 1e-6:
+            # A flat profile carries no tone signal, so there is nothing to compare
+            return 0.0
+        return float(np.clip(a @ b / (norm_a * norm_b), 0.0, 1.0))
 
 
 def get_tone_engine() -> ToneEngine:

@@ -62,6 +62,11 @@ class SemanticEngine:
         self._load_model()
         return self._model.encode(text, convert_to_numpy=True)
 
+    def encode_batch(self, texts: list[str]) -> np.ndarray:
+        """Encode several texts in one forward pass. Returns shape (len(texts), dim)."""
+        self._load_model()
+        return self._model.encode(texts, convert_to_numpy=True)
+
     def similarity(self, text_a: str, text_b: str) -> float:
         """Compute cosine similarity between two texts.
 
@@ -95,8 +100,7 @@ class SemanticEngine:
             return []
 
         # One batched forward pass for the query and every sentence
-        self._load_model()
-        embeddings = self._model.encode([query] + sentences, convert_to_numpy=True)
+        embeddings = self.encode_batch([query] + sentences)
         query_emb, sentence_embs = embeddings[0], embeddings[1:]
         norms = np.linalg.norm(sentence_embs, axis=1) * np.linalg.norm(query_emb)
         dots = sentence_embs @ query_emb

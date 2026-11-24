@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_behave.core.assertions import AssertBehavior, assert_behavior
+from llm_behave.core.assertions import assert_behavior
 from llm_behave.core.conversation import ConversationTest
 from llm_behave.providers.base import MockProvider
 
@@ -28,7 +28,7 @@ def mock_provider():
 
 
 @pytest.fixture
-def conversation(mock_provider):
+def conversation():
     """Fixture that creates a ConversationTest with a mock provider."""
     def _factory(responses: list[str] | None = None):
         provider = MockProvider(responses=responses or ["Mock response"])

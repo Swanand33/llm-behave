@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_behave.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider, normalize_tool_arguments
 
 
 class AnthropicProvider(LLMProvider):
@@ -15,22 +15,27 @@ class AnthropicProvider(LLMProvider):
         response = provider.chat([{"role": "user", "content": "Hello"}])
     """
 
-    def __init__(self, model: str = "claude-sonnet-4-6", **client_kwargs: Any) -> None:
+    def __init__(
+        self,
+        model: str = "claude-sonnet-4-6",
+        max_tokens: int = 1024,
+        **client_kwargs: Any,
+    ) -> None:
         try:
             import anthropic
-
-            self._client = anthropic.Anthropic(**client_kwargs)
         except ImportError:
             raise ImportError(
                 "anthropic package required. Install with: pip install llm-behave[anthropic]"
-            )
+            ) from None
+        self._client = anthropic.Anthropic(**client_kwargs)
         self._model = model
+        self._max_tokens = max_tokens
 
     def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        kwargs.setdefault("max_tokens", self._max_tokens)
         response = self._client.messages.create(
             model=self._model,
             messages=messages,
-            max_tokens=1024,
             **kwargs,
         )
         # Extract text from content blocks
@@ -42,11 +47,11 @@ class AnthropicProvider(LLMProvider):
     def chat_with_tools(
         self, messages: list[dict[str, str]], tools: list[dict], **kwargs: Any
     ) -> tuple[str, list[dict[str, Any]]]:
+        kwargs.setdefault("max_tokens", self._max_tokens)
         response = self._client.messages.create(
             model=self._model,
             messages=messages,
             tools=tools,
-            max_tokens=1024,
             **kwargs,
         )
 
@@ -59,7 +64,7 @@ class AnthropicProvider(LLMProvider):
             elif block.type == "tool_use":
                 tool_calls.append({
                     "name": block.name,
-                    "arguments": block.input,
+                    "arguments": normalize_tool_arguments(block.input),
                 })
 
         return "".join(text_parts), tool_calls

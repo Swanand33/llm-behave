@@ -2,11 +2,28 @@
 
 from __future__ import annotations
 
+import functools
 import json
+import os
+import re
+import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+
+# Baseline names become file names, so they must not be able to escape the directory.
+_SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _validate_name(name: str) -> str:
+    if not isinstance(name, str) or not _SAFE_NAME.match(name) or ".." in name:
+        raise ValueError(
+            f"Invalid baseline name {name!r}. Use letters, digits, '.', '_' or '-' "
+            "(starting with a letter or digit); path separators are not allowed."
+        )
+    return name
 
 
 class DriftBaseline(BaseModel):
@@ -36,6 +53,11 @@ class DriftTest:
 
     Saves baseline behavior and compares future runs against it.
     Designed for CI pipelines to catch silent model regressions.
+
+    Every call of a ``@DriftTest.baseline`` function *appends* its output to the
+    named baseline (a ring buffer capped at ``max_outputs``); it does not only
+    record on the first run. ``compare`` scores a new output against the most
+    similar stored output.
     """
 
     DEFAULT_DIR = Path(".llm_behave_baselines")
@@ -52,10 +74,13 @@ class DriftTest:
             save_as: Name for this baseline.
             baseline_dir: Directory to store baselines. Defaults to .llm_behave_baselines/
             max_outputs: Maximum outputs to retain (ring buffer). Defaults to 20.
+                If a baseline already exists, this value replaces its stored limit.
         """
+        _validate_name(save_as)
         storage = Path(baseline_dir) if baseline_dir else DriftTest.DEFAULT_DIR
 
         def decorator(func: Callable) -> Callable:
+            @functools.wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 result = func(*args, **kwargs)
                 DriftTest._save_baseline(save_as, result, storage, max_outputs)
@@ -84,6 +109,7 @@ class DriftTest:
         Returns:
             DriftResult with pass/fail and drift score.
         """
+        _validate_name(baseline_name)
         storage = Path(baseline_dir) if baseline_dir else DriftTest.DEFAULT_DIR
         baseline = DriftTest._load_baseline(baseline_name, storage)
 
@@ -133,6 +159,7 @@ class DriftTest:
 
     @staticmethod
     def _save_baseline(name: str, output: Any, directory: Path, max_outputs: int = 20) -> None:
+        _validate_name(name)
         directory.mkdir(parents=True, exist_ok=True)
         filepath = directory / f"{name}.json"
 
@@ -146,10 +173,11 @@ class DriftTest:
             if len(existing.embeddings) != len(existing.outputs):
                 # Legacy baseline without aligned embeddings: rebuild them once
                 existing.embeddings = [engine.encode(o).tolist() for o in existing.outputs]
+            existing.max_outputs = max_outputs
             existing.outputs.append(text)
             existing.embeddings.append(engine.encode(text).tolist())
-            existing.outputs = existing.outputs[-existing.max_outputs:]
-            existing.embeddings = existing.embeddings[-existing.max_outputs:]
+            existing.outputs = existing.outputs[-max_outputs:]
+            existing.embeddings = existing.embeddings[-max_outputs:]
             data = existing.model_dump()
         else:
             data = DriftBaseline(
@@ -161,12 +189,27 @@ class DriftTest:
                 max_outputs=max_outputs,
             ).model_dump()
 
-        filepath.write_text(json.dumps(data, indent=2))
+        # Write to a temp file then rename, so a crash can't leave a half-written baseline
+        fd, tmp_name = tempfile.mkstemp(dir=directory, prefix=f".{name}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(data, handle, indent=2)
+            os.replace(tmp_name, filepath)
+        except BaseException:
+            Path(tmp_name).unlink(missing_ok=True)
+            raise
 
     @staticmethod
     def _load_baseline(name: str, directory: Path) -> DriftBaseline | None:
+        _validate_name(name)
         filepath = directory / f"{name}.json"
         if not filepath.exists():
             return None
-        data = json.loads(filepath.read_text())
-        return DriftBaseline(**data)
+        try:
+            data = json.loads(filepath.read_text(encoding="utf-8"))
+            return DriftBaseline(**data)
+        except (json.JSONDecodeError, ValidationError, TypeError) as exc:
+            raise ValueError(
+                f"Baseline file {filepath} is corrupt or not a valid baseline "
+                f"({type(exc).__name__}). Delete it and re-run the baseline test."
+            ) from exc

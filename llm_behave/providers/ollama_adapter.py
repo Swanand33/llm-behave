@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_behave.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider, normalize_tool_arguments
 
 
 class OllamaProvider(LLMProvider):
@@ -18,12 +18,11 @@ class OllamaProvider(LLMProvider):
     def __init__(self, model: str = "llama3", host: str | None = None) -> None:
         try:
             import ollama
-
-            self._client = ollama.Client(host=host) if host else ollama.Client()
         except ImportError:
             raise ImportError(
                 "ollama package required. Install with: pip install llm-behave[ollama]"
-            )
+            ) from None
+        self._client = ollama.Client(host=host) if host else ollama.Client()
         self._model = model
 
     def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
@@ -44,14 +43,16 @@ class OllamaProvider(LLMProvider):
             tools=tools,
             **kwargs,
         )
-        text = response["message"]["content"]
+        message = response["message"]
+        text = message["content"] or ""
         tool_calls = []
 
-        if "tool_calls" in response.get("message", {}):
-            for tc in response["message"]["tool_calls"]:
-                tool_calls.append({
-                    "name": tc["function"]["name"],
-                    "arguments": tc["function"]["arguments"],
-                })
+        # `message` is a dict or an ollama response object; both support .get()
+        for tc in message.get("tool_calls") or []:
+            function = tc["function"]
+            tool_calls.append({
+                "name": function["name"],
+                "arguments": normalize_tool_arguments(function["arguments"]),
+            })
 
         return text, tool_calls

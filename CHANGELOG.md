@@ -2,6 +2,23 @@
 
 All notable changes to llm-behave will be documented here.
 
+## [Unreleased]
+
+### Fixed
+- **OpenAI tool-call `arguments` are now dicts**, like Anthropic and Ollama (they were a raw JSON string). Unparseable arguments are kept under `"_raw"`.
+- **`consistent_tone_across_turns()` now compares tone, not topic.** `ToneEngine.tone_similarity()` scores each reply against every tone and compares the centred profiles. It also no longer counts the latest reply twice. Thresholds tuned against the old behaviour may need re-tuning; validate against your own conversations.
+- **Drift baselines:** a new `max_outputs` now applies to an existing baseline; `@DriftTest.baseline` keeps the wrapped function's name and docstring; baseline names that could escape the directory (`../x`, `a/b`) are rejected; writes are atomic; a corrupt baseline file raises a clear `ValueError`.
+
+### Added
+- `AnthropicProvider(max_tokens=...)`, also overridable per call.
+- Mocked-SDK tests for the OpenAI, Anthropic and Ollama adapters.
+- `py.typed` marker and `Typing :: Typed` / Python 3.13 classifiers.
+- `AssertionResult`, `DriftResult`, `ConversationResponse`, `LLMProvider` exported from `llm_behave`; `OpenAIProvider`, `AnthropicProvider`, `OllamaProvider` importable from it lazily.
+- Tests that need the `[semantic]` extra are skipped, not failed, on a core-only install.
+
+### Removed
+- Empty `llm_behave/plugin/fixtures.py`.
+
 ## [0.2.1] — 2026-10-26
 
 ### Fixed

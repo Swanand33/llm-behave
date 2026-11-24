@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
 
 from pydantic import BaseModel
 
@@ -77,15 +77,16 @@ class ConversationResponse:
     def consistent_tone_across_turns(self, threshold: float = 0.7) -> bool:
         """Assert tone is consistent across all assistant turns.
 
-        Known limitation: this compares whole-response embeddings, so it
-        measures overall semantic similarity -- topic as well as tone.
+        Compares tone profiles (how strongly each reply reads as empathetic,
+        professional, rude, ...) between consecutive assistant turns, so replies
+        on different topics but in the same register still count as consistent.
         Raises AssertionError if the average falls below threshold.
         """
         from llm_behave.engines.tone import get_tone_engine
 
         engine = get_tone_engine()
+        # say() records the current reply in history before building this response
         assistant_turns = [t.content for t in self._history if t.role == "assistant"]
-        assistant_turns.append(self._content)
 
         if len(assistant_turns) < 2:
             return True

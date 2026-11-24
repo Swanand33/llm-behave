@@ -2,8 +2,31 @@
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from typing import Any
+
+
+def normalize_tool_arguments(arguments: Any) -> dict[str, Any]:
+    """Return tool-call arguments as a dict, whatever the provider sent.
+
+    OpenAI sends a JSON string; Anthropic and Ollama send mappings. Invalid or
+    non-object JSON is preserved under ``"_raw"`` instead of being dropped.
+    """
+    if arguments is None or arguments == "":
+        return {}
+    if isinstance(arguments, str):
+        try:
+            parsed = json.loads(arguments)
+        except json.JSONDecodeError:
+            return {"_raw": arguments}
+        return parsed if isinstance(parsed, dict) else {"_raw": arguments}
+    if isinstance(arguments, dict):
+        return arguments
+    try:
+        return dict(arguments)
+    except (TypeError, ValueError):
+        return {"_raw": arguments}
 
 
 class LLMProvider(ABC):
@@ -39,6 +62,7 @@ class LLMProvider(ABC):
         Returns:
             Tuple of (text_response, tool_calls_list).
             tool_calls_list items: {"name": "...", "arguments": {...}}
+            ``arguments`` is always a dict, for every provider.
         """
         ...
 

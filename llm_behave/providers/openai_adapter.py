@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_behave.providers.base import LLMProvider
+from llm_behave.providers.base import LLMProvider, normalize_tool_arguments
 
 
 class OpenAIProvider(LLMProvider):
@@ -18,12 +18,11 @@ class OpenAIProvider(LLMProvider):
     def __init__(self, model: str = "gpt-4o-mini", **client_kwargs: Any) -> None:
         try:
             import openai
-
-            self._client = openai.OpenAI(**client_kwargs)
         except ImportError:
             raise ImportError(
                 "openai package required. Install with: pip install llm-behave[openai]"
-            )
+            ) from None
+        self._client = openai.OpenAI(**client_kwargs)
         self._model = model
 
     def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
@@ -51,7 +50,7 @@ class OpenAIProvider(LLMProvider):
             for tc in message.tool_calls:
                 tool_calls.append({
                     "name": tc.function.name,
-                    "arguments": tc.function.arguments,
+                    "arguments": normalize_tool_arguments(tc.function.arguments),
                 })
 
         return text, tool_calls
