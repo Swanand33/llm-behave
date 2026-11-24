@@ -19,10 +19,24 @@ That covers the tone-profile change, drift changes and the e2e tone test against
 - [ ] Optional: sanity-check `refuses()` and the tone default on your own real conversations.
 
 ## Release (not done yet)
+- PyPI currently has **0.2.1** as the latest version (an earlier search showed a stale 0.1.2), so
+  0.3.0 is the next release.
 - [ ] Add a PyPI trusted publisher: repo `Swanand33/llm-behave`, workflow `publish.yml`,
       environment `pypi`. Create the GitHub environment `pypi`.
 - [ ] After the checks above pass: publish a GitHub release tagged `v0.3.0`.
 - [ ] Check the downloads badge renders once 0.3.0 is on PyPI.
+
+## Known gaps (not bugs, parked)
+- [ ] `publish.yml` has never run; it uses `actions/upload-artifact@v5` / `download-artifact@v5`
+      (valid, but older than the Node 24 majors). Bump if GitHub warns.
+- [ ] `OllamaProvider.chat_with_tools` is tested with dict responses only; confirm against the
+      real `ollama` client's response object.
+- [ ] Semantic/NLI engine singletons are not thread-safe (matters for threaded runners only).
+- [ ] README performance table and the "small NLI model" size are not backed by a benchmark script.
+- [ ] Your local-only `docs/` and `examples/` are not in the repo yet; commit them when ready.
+- [ ] Cloud environment `llm-behave` (created for the Hugging Face experiment) still allows five
+      Hugging Face hosts; delete or tidy it in your Claude settings if you don't want it.
+- [ ] No SECURITY.md / PR template / issue-template config yet.
 
 ## Decisions parked
 - [x] Contradiction convention: kept `contradicts_turn()` as a bool predicate (no breaking change)
