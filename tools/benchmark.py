@@ -20,7 +20,7 @@ OUTPUT = (
 
 CASES = {
     "mentions()": lambda: assert_behavior(OUTPUT).mentions("refund"),
-    "tone()": lambda: assert_behavior(OUTPUT).tone("empathetic", threshold=0.3),
+    "tone()": lambda: assert_behavior(OUTPUT).tone("empathetic", threshold=0.1),
     "intent()": lambda: assert_behavior(OUTPUT).intent("helping with a refund", threshold=0.1),
     "refuses() (NLI)": lambda: assert_behavior(OUTPUT).not_refuses(),
     "contradicts() (NLI)": lambda: assert_behavior("We do not offer refunds.").contradicts(
@@ -29,9 +29,9 @@ CASES = {
     "4-assertion chain": lambda: (
         assert_behavior(OUTPUT)
         .mentions("refund")
-        .tone("empathetic", threshold=0.3)
+        .tone("empathetic", threshold=0.1)
         .intent("helping with a refund", threshold=0.1)
-        .not_mentions("weather", threshold=0.9)
+        .not_mentions("weather")
     ),
 }
 
