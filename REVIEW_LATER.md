@@ -24,4 +24,4 @@ The cloud sandbox could not download `all-MiniLM-L6-v2` or
 ## Decisions parked
 - [ ] `ConversationResponse.contradicts_turn()` returns a bool while `recalls()` and
       `consistent_tone_across_turns()` raise `AssertionError`. Pick one convention.
-- [ ] Which new assertions to add beyond the model-free length/format checks.
+- [ ] Which further assertions to add (model-free length/word-count/regex checks are done). Candidates: `refuses()`, `not_contradicts_history`, async provider support.

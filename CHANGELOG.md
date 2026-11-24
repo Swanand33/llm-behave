@@ -6,6 +6,9 @@ All notable changes to llm-behave will be documented here.
 
 ## [0.3.0] — 2026-11-24
 
+### Added
+- Model-free assertions: `length(min, max)`, `word_count(min, max)`, `matches_regex(pattern)` and `not_matches_regex(pattern)`. They work on a core install and record results like the other assertions.
+
 ### Fixed
 - **OpenAI tool-call `arguments` are now dicts**, like Anthropic and Ollama (they were a raw JSON string). Unparseable arguments are kept under `"_raw"`.
 - **`consistent_tone_across_turns()` now compares tone, not topic.** `ToneEngine.tone_similarity()` scores each reply against every tone and compares the centred profiles. It also no longer counts the latest reply twice. Thresholds tuned against the old behaviour may need re-tuning; validate against your own conversations.

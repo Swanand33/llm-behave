@@ -286,6 +286,90 @@ class AssertBehavior:
             raw = "\n".join(lines).strip()
         return json.loads(raw)
 
+    def _check(
+        self, passed: bool, assertion_type: str, expected: str, failure: str
+    ) -> AssertBehavior:
+        """Record a model-free check and raise AssertionError if it failed."""
+        self._results.append(
+            AssertionResult(
+                passed=passed,
+                assertion_type=assertion_type,
+                expected=expected,
+                actual_summary=self._text[:100],
+                message="" if passed else failure,
+            )
+        )
+        assert passed, f"{failure}\nOutput: {self._text[:200]}"
+        return self
+
+    def length(self, min: int | None = None, max: int | None = None) -> AssertBehavior:
+        """Assert the output's character count is within [min, max] (inclusive).
+
+        Pure Python: no model needed. Either bound may be omitted.
+        """
+        if min is None and max is None:
+            raise ValueError("length() needs at least one of min or max.")
+        count = len(self._text)
+        too_short = min is not None and count < min
+        too_long = max is not None and count > max
+        return self._check(
+            not (too_short or too_long),
+            "length",
+            f"{'' if min is None else min}..{'' if max is None else max} characters",
+            f"Output has {count} characters, expected between "
+            f"{'0' if min is None else min} and {'unlimited' if max is None else max}.",
+        )
+
+    def word_count(self, min: int | None = None, max: int | None = None) -> AssertBehavior:
+        """Assert the output's word count is within [min, max] (inclusive).
+
+        Words are whitespace-separated tokens. Pure Python: no model needed.
+        """
+        if min is None and max is None:
+            raise ValueError("word_count() needs at least one of min or max.")
+        count = len(self._text.split())
+        too_few = min is not None and count < min
+        too_many = max is not None and count > max
+        return self._check(
+            not (too_few or too_many),
+            "word_count",
+            f"{'' if min is None else min}..{'' if max is None else max} words",
+            f"Output has {count} word(s), expected between "
+            f"{'0' if min is None else min} and {'unlimited' if max is None else max}.",
+        )
+
+    def matches_regex(self, pattern: str, flags: int = 0) -> AssertBehavior:
+        """Assert the output contains a match for a regular expression.
+
+        Uses ``re.search``. Pure Python: no model needed.
+        """
+        import re
+
+        found = re.search(pattern, self._text, flags) is not None
+        return self._check(
+            found,
+            "matches_regex",
+            pattern,
+            f"Output does not match regex {pattern!r}.",
+        )
+
+    def not_matches_regex(self, pattern: str, flags: int = 0) -> AssertBehavior:
+        """Assert the output does NOT contain a match for a regular expression.
+
+        Handy for exact-format leaks (emails, API keys, card numbers) where
+        semantic matching is the wrong tool. Pure Python: no model needed.
+        """
+        import re
+
+        match = re.search(pattern, self._text, flags)
+        return self._check(
+            match is None,
+            "not_matches_regex",
+            f"no match for {pattern}",
+            f"Output matches forbidden regex {pattern!r}"
+            + (f": {match.group(0)!r}." if match else "."),
+        )
+
     def returns_valid_json(self) -> AssertBehavior:
         """Assert that the output is parseable as JSON.
 

@@ -60,6 +60,8 @@ pip install llm-behave[semantic]
 | `intent()` | Does the response intend to help? refuse? apologize? |
 | `calls_tool()` | Assert which tool the LLM called |
 | `contradicts()` | Assert the output contradicts a reference statement (NLI) |
+| `length()` / `word_count()` | Assert the output is within a character / word range (no model needed) |
+| `matches_regex()` / `not_matches_regex()` | Assert an exact pattern is present / absent, e.g. no card numbers or emails (no model needed) |
 | `returns_valid_json()` | Assert the output parses as JSON (tolerates ```json fences) |
 | `matches_schema()` | Validate output JSON against a Pydantic model |
 | `has_keys()` | Assert the output JSON object contains required keys |
@@ -261,6 +263,7 @@ llm-behave uses [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformer
 - **`contradicts_turn()`** — same NLI model, applied across conversation turns
 - **`grounded_in()` / `no_hallucination()`** — the same NLI model, run the other direction: each output sentence must be *entailed* by some context sentence, else it's flagged as ungrounded
 - **`returns_valid_json()` / `matches_schema()` / `has_keys()`** — pure Python + Pydantic, no model needed
+- **`length()` / `word_count()` / `matches_regex()` / `not_matches_regex()`** — pure Python, no model needed
 
 Models load **lazily** on first use and are cached for the rest of the test session. Import time stays fast.
 
