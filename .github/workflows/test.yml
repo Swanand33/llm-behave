@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:  # run manually from the Actions tab (or the API) on any branch
 
 permissions:
   contents: read
@@ -89,6 +90,10 @@ jobs:
 
       - name: Run full test suite
         run: python -m pytest tests/ -q --cov=llm_behave --cov-report=term-missing
+
+      - name: Print model scores for calibration (manual runs only)
+        if: github.event_name == 'workflow_dispatch' && matrix.python-version == '3.12' && hashFiles('tools/calibrate.py') != ''
+        run: python tools/calibrate.py
 
   build:
     name: Build and verify distribution
