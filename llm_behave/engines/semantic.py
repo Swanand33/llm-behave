@@ -7,6 +7,7 @@ and drift detection. Uses offline models -- no LLM judge, no API cost.
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 
 import numpy as np
@@ -17,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 # Multi-model engine cache: model_name -> SemanticEngine
 _engines: dict[str, SemanticEngine] = {}
+# Guards engine creation and model loading so threads never load a model twice
+_LOCK = threading.RLock()
 
 # Default model -- small (80MB), fast, works offline
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
@@ -42,7 +45,13 @@ class SemanticEngine:
         return self._model_name
 
     def _load_model(self) -> None:
-        """Load the sentence-transformer model. Called lazily on first use."""
+        """Load the sentence-transformer model lazily (thread-safe)."""
+        if self._model is not None:
+            return
+        with _LOCK:
+            self._load_model_locked()
+
+    def _load_model_locked(self) -> None:
         if self._model is not None:
             return
 
@@ -127,6 +136,7 @@ class SemanticEngine:
 
 def get_semantic_engine(model_name: str = DEFAULT_MODEL) -> SemanticEngine:
     """Get or create a cached SemanticEngine for the given model."""
-    if model_name not in _engines:
-        _engines[model_name] = SemanticEngine(model_name)
-    return _engines[model_name]
+    with _LOCK:
+        if model_name not in _engines:
+            _engines[model_name] = SemanticEngine(model_name)
+        return _engines[model_name]

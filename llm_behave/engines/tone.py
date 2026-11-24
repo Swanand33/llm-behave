@@ -7,9 +7,12 @@ This supports arbitrary tone labels: empathetic, professional, friendly, etc.
 
 from __future__ import annotations
 
+import threading
+
 import numpy as np
 
 _engine: ToneEngine | None = None
+_LOCK = threading.Lock()
 
 # Tone descriptions -- fallback for unknown tones
 TONE_DESCRIPTIONS: dict[str, str] = {
@@ -186,6 +189,7 @@ class ToneEngine:
 def get_tone_engine() -> ToneEngine:
     """Get the singleton tone engine instance."""
     global _engine
-    if _engine is None:
-        _engine = ToneEngine()
-    return _engine
+    with _LOCK:
+        if _engine is None:
+            _engine = ToneEngine()
+        return _engine

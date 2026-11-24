@@ -242,3 +242,34 @@ class TestOllamaProvider:
 
         with pytest.raises(ImportError, match=r"llm-behave\[ollama\]"):
             OllamaProvider()
+
+
+class TestOllamaRealClientTypes:
+    """The real ollama client returns pydantic objects, not dicts."""
+
+    def test_chat_response_objects_with_tool_calls(self, monkeypatch):
+        ollama = pytest.importorskip("ollama")
+        from llm_behave.providers.ollama_adapter import OllamaProvider
+
+        call = ollama.Message.ToolCall(
+            function=ollama.Message.ToolCall.Function(name="search", arguments={"q": "pytest"})
+        )
+        response = ollama.ChatResponse(
+            model="m", message=ollama.Message(role="assistant", content="", tool_calls=[call])
+        )
+        monkeypatch.setattr(ollama, "Client", lambda **kw: NS(chat=lambda **k: response))
+        text, calls = OllamaProvider(model="m").chat_with_tools([], [{"type": "function"}])
+        assert text == ""
+        assert calls == [{"name": "search", "arguments": {"q": "pytest"}}]
+
+    def test_chat_response_object_without_tool_calls(self, monkeypatch):
+        ollama = pytest.importorskip("ollama")
+        from llm_behave.providers.ollama_adapter import OllamaProvider
+
+        response = ollama.ChatResponse(
+            model="m", message=ollama.Message(role="assistant", content="hello")
+        )
+        monkeypatch.setattr(ollama, "Client", lambda **kw: NS(chat=lambda **k: response))
+        provider = OllamaProvider(model="m")
+        assert provider.chat([]) == "hello"
+        assert provider.chat_with_tools([], []) == ("hello", [])

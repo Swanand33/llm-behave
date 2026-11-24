@@ -31,7 +31,7 @@ Most LLM testing tools either:
 - Only do exact string matching (misses semantic meaning)
 - Don't support multi-turn conversations at all
 
-**llm-behave** uses small offline transformer models (80MB embeddings + a small NLI model, both CPU) to understand meaning — no API calls, no API key, no cost, no internet required during tests. That includes RAG grounding and hallucination detection: `grounded_in()` / `no_hallucination()` check every claim against retrieved context using the same offline NLI model, no judge LLM required.
+**llm-behave** uses small offline transformer models (an 80MB embedding model plus an NLI model that is several hundred MB on first download, both CPU) to understand meaning — no API calls, no API key, no cost, no internet required during tests. That includes RAG grounding and hallucination detection: `grounded_in()` / `no_hallucination()` check every claim against retrieved context using the same offline NLI model, no judge LLM required.
 
 ---
 

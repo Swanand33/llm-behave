@@ -7,6 +7,7 @@ each other. Runs offline -- no LLM judge needed.
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 
 import numpy as np
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Multi-model engine cache: model_name -> ContradictionEngine
 _engines: dict[str, ContradictionEngine] = {}
+# Guards engine creation and model loading so threads never load a model twice
+_LOCK = threading.RLock()
 
 DEFAULT_NLI_MODEL = "cross-encoder/nli-deberta-v3-small"
 
@@ -31,7 +34,13 @@ class ContradictionEngine:
         self._model: Any = None
 
     def _load_model(self) -> None:
-        """Load the NLI model lazily."""
+        """Load the NLI model lazily (thread-safe)."""
+        if self._model is not None:
+            return
+        with _LOCK:
+            self._load_model_locked()
+
+    def _load_model_locked(self) -> None:
         if self._model is not None:
             return
 
@@ -106,6 +115,7 @@ class ContradictionEngine:
 
 def get_contradiction_engine(model_name: str = DEFAULT_NLI_MODEL) -> ContradictionEngine:
     """Get or create a cached ContradictionEngine for the given model."""
-    if model_name not in _engines:
-        _engines[model_name] = ContradictionEngine(model_name)
-    return _engines[model_name]
+    with _LOCK:
+        if model_name not in _engines:
+            _engines[model_name] = ContradictionEngine(model_name)
+        return _engines[model_name]

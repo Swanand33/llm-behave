@@ -26,11 +26,14 @@ All notable changes to llm-behave will be documented here.
 - Tests that need the `[semantic]` extra are skipped, not failed, on a core-only install.
 
 ### Changed
+- Semantic, NLI and tone engines load their model exactly once even when several threads use them at the same time.
+- Added `SECURITY.md`, a pull request template and an issue-template config.
 - CI now runs ruff, mypy, a core-only install job, Python 3.10–3.13 with coverage, and a build + `twine check` job. Timing assertions scale with `LLM_BEHAVE_PERF_FACTOR` (CI sets 5).
 - Releases publish through PyPI trusted publishing (no stored token), after checking the tag matches `pyproject.toml` and `__version__`.
 - README: replaced the hand-typed test-count badge with a live CI badge, added a downloads badge, and clarified how `DriftTest.baseline` accumulates outputs.
 
 ### Removed
+- Unused `langchain` keyword, `pytest-html` dev dependency, redundant `torch` pin and duplicate license classifier from `pyproject.toml`.
 - Empty `llm_behave/plugin/fixtures.py`.
 
 ## [0.2.1] — 2026-10-26

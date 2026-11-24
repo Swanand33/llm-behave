@@ -47,6 +47,7 @@ dev = [
     "ruff>=0.1",
     "mypy>=1.0",
     "pytest-cov>=4.0",
+    "ollama>=0.4",
 ]
 
 [project.entry-points.pytest11]
