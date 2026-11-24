@@ -10,8 +10,13 @@ That covers the tone-profile change, drift changes and the e2e tone test against
 
 - [x] Full suite against real models
 - [x] CI jobs green on first run
-- [ ] Optional: eyeball tone thresholds on your own conversations. The default 0.7 for
-      `consistent_tone_across_turns()` passes the repo's tests but is untuned for real traffic.
+- [x] Tone default recalibrated on real model output: 0.7 was too strict (same-register pairs
+      scored 0.66-0.94), so the default is now 0.4 (flips scored 0.0-0.15).
+- [x] `refuses()` calibrated on real output (default 0.10). One soft refusal
+      ("Unfortunately I'm not able to share another customer's account details.") scored only
+      0.013 and is not detected; pass a lower threshold if that matters to you.
+- [x] Latest full-model run: 309 passed on Python 3.10-3.13.
+- [ ] Optional: sanity-check `refuses()` and the tone default on your own real conversations.
 
 ## Release (not done yet)
 - [ ] Add a PyPI trusted publisher: repo `Swanand33/llm-behave`, workflow `publish.yml`,
@@ -20,6 +25,6 @@ That covers the tone-profile change, drift changes and the e2e tone test against
 - [ ] Check the downloads badge renders once 0.3.0 is on PyPI.
 
 ## Decisions parked
-- [ ] `ConversationResponse.contradicts_turn()` returns a bool while `recalls()` and
-      `consistent_tone_across_turns()` raise `AssertionError`. Pick one convention.
-- [ ] Which further assertions to add (model-free length/word-count/regex checks are done). Candidates: `refuses()`, `not_contradicts_history`, async provider support.
+- [x] Contradiction convention: kept `contradicts_turn()` as a bool predicate (no breaking change)
+      and added the raising `not_contradicts_turn()` / `not_contradicts_history()`.
+- [ ] Natively async provider clients (`achat` currently runs the sync call in a thread).
