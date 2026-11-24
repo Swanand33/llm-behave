@@ -7,6 +7,7 @@ and drift detection. Uses offline models -- no LLM judge, no API cost.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -30,7 +31,7 @@ class SemanticEngine:
 
     def __init__(self, model_name: str = DEFAULT_MODEL) -> None:
         self._model_name = model_name
-        self._model = None
+        self._model: Any = None
 
     @property
     def model_name(self) -> str:
@@ -60,12 +61,14 @@ class SemanticEngine:
     def encode(self, text: str) -> np.ndarray:
         """Encode text into an embedding vector."""
         self._load_model()
-        return self._model.encode(text, convert_to_numpy=True)
+        embedding: np.ndarray = self._model.encode(text, convert_to_numpy=True)
+        return embedding
 
     def encode_batch(self, texts: list[str]) -> np.ndarray:
         """Encode several texts in one forward pass. Returns shape (len(texts), dim)."""
         self._load_model()
-        return self._model.encode(texts, convert_to_numpy=True)
+        embeddings: np.ndarray = self._model.encode(texts, convert_to_numpy=True)
+        return embeddings
 
     def similarity(self, text_a: str, text_b: str) -> float:
         """Compute cosine similarity between two texts.

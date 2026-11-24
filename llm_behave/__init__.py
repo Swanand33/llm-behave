@@ -13,7 +13,7 @@ from llm_behave.core.drift import DriftResult, DriftTest
 from llm_behave.engines.contradiction import get_contradiction_engine
 from llm_behave.providers.base import LLMProvider, MockProvider
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 __all__ = [
     "assert_behavior",

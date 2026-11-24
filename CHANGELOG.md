@@ -4,6 +4,8 @@ All notable changes to llm-behave will be documented here.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-11-24
+
 ### Fixed
 - **OpenAI tool-call `arguments` are now dicts**, like Anthropic and Ollama (they were a raw JSON string). Unparseable arguments are kept under `"_raw"`.
 - **`consistent_tone_across_turns()` now compares tone, not topic.** `ToneEngine.tone_similarity()` scores each reply against every tone and compares the centred profiles. It also no longer counts the latest reply twice. Thresholds tuned against the old behaviour may need re-tuning; validate against your own conversations.
@@ -15,6 +17,11 @@ All notable changes to llm-behave will be documented here.
 - `py.typed` marker and `Typing :: Typed` / Python 3.13 classifiers.
 - `AssertionResult`, `DriftResult`, `ConversationResponse`, `LLMProvider` exported from `llm_behave`; `OpenAIProvider`, `AnthropicProvider`, `OllamaProvider` importable from it lazily.
 - Tests that need the `[semantic]` extra are skipped, not failed, on a core-only install.
+
+### Changed
+- CI now runs ruff, mypy, a core-only install job, Python 3.10–3.13 with coverage, and a build + `twine check` job. Timing assertions scale with `LLM_BEHAVE_PERF_FACTOR` (CI sets 5).
+- Releases publish through PyPI trusted publishing (no stored token), after checking the tag matches `pyproject.toml` and `__version__`.
+- README: replaced the hand-typed test-count badge with a live CI badge, added a downloads badge, and clarified how `DriftTest.baseline` accumulates outputs.
 
 ### Removed
 - Empty `llm_behave/plugin/fixtures.py`.
@@ -96,3 +103,11 @@ First public release.
 - Offline ML engine: `all-MiniLM-L6-v2` (80MB, CPU, no internet needed)
 - Batch encoding for tone detection (~4x faster than sequential)
 - Lazy model loading — fast import, model loads on first assertion
+
+[Unreleased]: https://github.com/Swanand33/llm-behave/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Swanand33/llm-behave/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/Swanand33/llm-behave/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Swanand33/llm-behave/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/Swanand33/llm-behave/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/Swanand33/llm-behave/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/Swanand33/llm-behave/releases/tag/v0.1.0

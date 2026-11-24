@@ -6,18 +6,17 @@ input boundaries, singleton behavior, and unusual-but-valid usage.
 
 from __future__ import annotations
 
-import json
+import os
 import tempfile
 import time
 from pathlib import Path
 
 import pytest
 
-from llm_behave.core.assertions import assert_behavior, AssertBehavior
+from llm_behave.core.assertions import assert_behavior
 from llm_behave.core.conversation import ConversationTest
 from llm_behave.core.drift import DriftTest
 from llm_behave.providers.base import MockProvider
-
 
 # ---------------------------------------------------------------------------
 # Edge cases: unusual inputs to assert_behavior
@@ -285,6 +284,10 @@ class TestDriftEdgeCases:
 # Performance: <200ms per assertion after model is loaded
 # ---------------------------------------------------------------------------
 
+# Shared CI runners are slower and noisier than a dev machine; CI scales the limits.
+PERF_FACTOR = float(os.environ.get("LLM_BEHAVE_PERF_FACTOR", "1"))
+
+
 class TestPerformance:
     """Assertions must complete in <200ms after model warmup."""
 
@@ -300,21 +303,27 @@ class TestPerformance:
         start = time.perf_counter()
         assert_behavior(output).mentions("refund")
         elapsed_ms = (time.perf_counter() - start) * 1000
-        assert elapsed_ms < 200, f"mentions() took {elapsed_ms:.1f}ms (limit: 200ms)"
+        assert elapsed_ms < 200 * PERF_FACTOR, (
+            f"mentions() took {elapsed_ms:.1f}ms (limit: {200 * PERF_FACTOR:.0f}ms)"
+        )
 
     def test_tone_under_200ms(self):
         output = "I'm really sorry to hear about your experience. Let me help you right away."
         start = time.perf_counter()
         assert_behavior(output).tone("empathetic", threshold=0.3)
         elapsed_ms = (time.perf_counter() - start) * 1000
-        assert elapsed_ms < 200, f"tone() took {elapsed_ms:.1f}ms (limit: 200ms)"
+        assert elapsed_ms < 200 * PERF_FACTOR, (
+            f"tone() took {elapsed_ms:.1f}ms (limit: {200 * PERF_FACTOR:.0f}ms)"
+        )
 
     def test_intent_under_200ms(self):
         output = "Sure, let me look into that refund for you."
         start = time.perf_counter()
         assert_behavior(output).intent("helping with a refund")
         elapsed_ms = (time.perf_counter() - start) * 1000
-        assert elapsed_ms < 200, f"intent() took {elapsed_ms:.1f}ms (limit: 200ms)"
+        assert elapsed_ms < 200 * PERF_FACTOR, (
+            f"intent() took {elapsed_ms:.1f}ms (limit: {200 * PERF_FACTOR:.0f}ms)"
+        )
 
     def test_full_chain_under_500ms(self):
         """A realistic 4-assertion chain should finish in <500ms."""
@@ -331,7 +340,9 @@ class TestPerformance:
             .intent("helping with a refund")
         )
         elapsed_ms = (time.perf_counter() - start) * 1000
-        assert elapsed_ms < 500, f"4-assertion chain took {elapsed_ms:.1f}ms (limit: 500ms)"
+        assert elapsed_ms < 500 * PERF_FACTOR, (
+            f"4-assertion chain took {elapsed_ms:.1f}ms (limit: {500 * PERF_FACTOR:.0f}ms)"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -367,7 +378,7 @@ class TestSingletonAndLazyLoading:
     def test_semantic_import_does_not_import_torch(self):
         """Importing llm_behave.engines.semantic does NOT import torch at module level."""
         import sys
+
         # torch should only be imported AFTER encode() is called, not on import
         # We verify the module can be reimported without torch being a hard dep
-        import llm_behave.engines.semantic  # should not crash even if torch is present
         assert "llm_behave.engines.semantic" in sys.modules

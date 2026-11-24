@@ -4,26 +4,50 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
-  publish:
+  build:
+    name: Build and verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
 
-      - name: Install build tools
-        run: pip install build twine hatchling
+      - name: Release tag must match the package version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import os, re, tomllib
+          tag = os.environ["TAG"].removeprefix("v")
+          project = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+          init = re.search(r'__version__ = "([^"]+)"', open("llm_behave/__init__.py").read()).group(1)
+          print(f"tag={tag} pyproject={project} __version__={init}")
+          assert tag == project == init, "tag, pyproject.toml and __version__ must all match"
+          PY
 
-      - name: Build package
-        run: python -m build --no-isolation
+      - name: Run tests (core install)
+        run: |
+          pip install -e . pytest-cov
+          python -m pytest tests/ -q
+
+      - name: Build sdist and wheel
+        run: |
+          pip install build twine
+          python -m build
+
+      - name: Check metadata
+        run: twine check --strict dist/*
 
       - name: Clean-room smoke test (install built wheel, import it)
         # Catches the v0.1.0 failure: a wheel whose package folder name does not
-        # match the import name. Tests the ARTIFACT, not the source tree — so it
+        # match the import name. Tests the ARTIFACT, not the source tree, so it
         # runs from /tmp where the llm_behave/ source folder is NOT importable.
         run: |
           python -m venv /tmp/smoke
@@ -32,8 +56,25 @@ jobs:
           cd /tmp
           /tmp/smoke/bin/python -c "import llm_behave; from llm_behave import assert_behavior; assert_behavior('the weather is sunny', tool_calls=[{'name': 'get_weather', 'arguments': {}}]).calls_tool('get_weather'); print('OK: llm_behave', llm_behave.__version__)"
 
-      - name: Upload to PyPI
-        run: twine upload dist/*
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Upload to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/llm-behave/
+    permissions:
+      id-token: write  # required for PyPI trusted publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish with trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1

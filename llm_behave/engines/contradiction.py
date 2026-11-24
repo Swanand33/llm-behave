@@ -7,6 +7,7 @@ each other. Runs offline -- no LLM judge needed.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -27,7 +28,7 @@ class ContradictionEngine:
 
     def __init__(self, model_name: str = DEFAULT_NLI_MODEL) -> None:
         self._model_name = model_name
-        self._model = None
+        self._model: Any = None
 
     def _load_model(self) -> None:
         """Load the NLI model lazily."""

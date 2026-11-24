@@ -9,13 +9,10 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from llm_behave.core.assertions import assert_behavior, behavioral_test
 from llm_behave.core.conversation import ConversationTest
 from llm_behave.core.drift import DriftTest
 from llm_behave.providers.base import MockProvider
-
 
 # ---------------------------------------------------------------------------
 # Scenario 1: Customer support bot — full assertion chain

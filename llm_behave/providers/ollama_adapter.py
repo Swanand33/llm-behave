@@ -31,7 +31,7 @@ class OllamaProvider(LLMProvider):
             messages=messages,
             **kwargs,
         )
-        return response["message"]["content"]
+        return str(response["message"]["content"])
 
     def chat_with_tools(
         self, messages: list[dict[str, str]], tools: list[dict], **kwargs: Any

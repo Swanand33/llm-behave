@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
 
-from llm_behave.core.drift import DriftTest, DriftBaseline, DriftResult
+from llm_behave.core.drift import DriftResult, DriftTest
 
 
 class TestDriftBaseline:

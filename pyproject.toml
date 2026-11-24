@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llm-behave"
-version = "0.2.1"
+version = "0.3.0"
 description = "Behavioral testing for LLM applications. pytest plugin with semantic assertions, multi-turn conversation testing, and drift detection. No LLM judge needed."
 readme = "README.md"
 license = "MIT"
@@ -70,11 +70,17 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
+[tool.ruff.lint.per-file-ignores]
+# Prose tone descriptions are intentionally one string per line
+"llm_behave/engines/tone.py" = ["E501"]
+# Long assertion strings are fine in tests; test_rag imports after its skipif guard
+"tests/*" = ["E501", "E402"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
 
 [tool.mypy]
-python_version = "3.10"
+ignore_missing_imports = true
 warn_return_any = true
 warn_unused_configs = true

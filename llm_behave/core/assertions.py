@@ -117,7 +117,9 @@ class AssertBehavior:
         )
         return self
 
-    def not_mentions(self, concept: str, threshold: float = _DEFAULT_NOT_MENTIONS) -> AssertBehavior:
+    def not_mentions(
+        self, concept: str, threshold: float = _DEFAULT_NOT_MENTIONS
+    ) -> AssertBehavior:
         """Assert that the output does NOT semantically mention a concept."""
         from llm_behave.engines.semantic import get_semantic_engine
 
@@ -208,7 +210,9 @@ class AssertBehavior:
 
     def calls_tool(self, tool_name: str) -> AssertBehavior:
         """Assert that the LLM called a specific tool."""
-        called_names = [tc.get("name", tc.get("function", {}).get("name", "")) for tc in self._tool_calls]
+        called_names = [
+            tc.get("name", tc.get("function", {}).get("name", "")) for tc in self._tool_calls
+        ]
         passed = tool_name in called_names
 
         result = AssertionResult(
@@ -228,7 +232,9 @@ class AssertBehavior:
         )
         return self
 
-    def contradicts(self, other_text: str, threshold: float = _DEFAULT_CONTRADICTS) -> AssertBehavior:
+    def contradicts(
+        self, other_text: str, threshold: float = _DEFAULT_CONTRADICTS
+    ) -> AssertBehavior:
         """Assert that this output contradicts the given text.
 
         Uses an offline NLI model. Useful for multi-turn consistency checks
@@ -428,7 +434,9 @@ class AssertBehavior:
         )
         return self
 
-    def no_hallucination(self, context: str, threshold: float = _DEFAULT_GROUNDED) -> AssertBehavior:
+    def no_hallucination(
+        self, context: str, threshold: float = _DEFAULT_GROUNDED
+    ) -> AssertBehavior:
         """Assert the output introduces no claims unsupported by the context.
 
         Inverse framing of grounded_in(): fails if any sentence is a

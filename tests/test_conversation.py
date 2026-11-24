@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from llm_behave.core.conversation import ConversationTest, ConversationResponse
+from llm_behave.core.conversation import ConversationResponse, ConversationTest
 
 
 def make_echo_agent(responses: list[str] | None = None):

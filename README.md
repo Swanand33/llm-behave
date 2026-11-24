@@ -3,7 +3,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/llm-behave.svg)](https://pypi.org/project/llm-behave/)
 [![Python versions](https://img.shields.io/pypi/pyversions/llm-behave.svg)](https://pypi.org/project/llm-behave/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Swanand33/llm-behave/blob/main/LICENSE)
-[![Tests](https://img.shields.io/badge/tests-182%20passing-brightgreen.svg)](https://github.com/Swanand33/llm-behave)
+[![Downloads](https://img.shields.io/pypi/dm/llm-behave.svg)](https://pypistats.org/packages/llm-behave)
+[![Tests](https://github.com/Swanand33/llm-behave/actions/workflows/test.yml/badge.svg)](https://github.com/Swanand33/llm-behave/actions/workflows/test.yml)
 
 **Behavioral testing for LLM applications. A pytest plugin.**
 
@@ -186,7 +187,8 @@ Catch silent regressions when you update your model or prompts.
 ```python
 from llm_behave import DriftTest
 
-# First run: save baseline
+# Record a baseline. Each run of this function *adds* its output to the baseline
+# (kept as a rolling window of the latest `max_outputs`, default 20).
 @DriftTest.baseline(save_as="support_refund_flow")
 def get_baseline_output():
     return my_llm("I need a refund")
@@ -266,7 +268,7 @@ Models load **lazily** on first use and are cached for the rest of the test sess
 
 ## Performance
 
-Measured after model warmup (model loads once per test session):
+Typical timings on a developer laptop (CPU), measured after model warmup (the model loads once per test session). `tests/test_harden.py` enforces a 200ms-per-assertion ceiling; CI scales it with `LLM_BEHAVE_PERF_FACTOR` because shared runners are slower:
 
 | Assertion | Time |
 |---|---|

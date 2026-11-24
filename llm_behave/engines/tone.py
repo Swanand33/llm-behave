@@ -116,7 +116,8 @@ class ToneEngine:
     def _cosine(vec: np.ndarray, matrix: np.ndarray) -> np.ndarray:
         norms = np.linalg.norm(matrix, axis=1) * np.linalg.norm(vec)
         dots = matrix @ vec
-        return np.divide(dots, norms, out=np.zeros_like(dots), where=norms != 0)
+        scores: np.ndarray = np.divide(dots, norms, out=np.zeros_like(dots), where=norms != 0)
+        return scores
 
     def check_tone(self, text: str, expected_tone: str) -> float:
         """Check how well text matches an expected tone.
