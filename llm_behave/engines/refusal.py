@@ -1,41 +1,29 @@
-"""Refusal detection using embedding similarity (offline, no judge LLM).
+"""Refusal detection with the offline NLI model (no judge LLM, no API cost).
 
-Scores each sentence of a response against concrete refusal phrasings and
-returns the best match, the same technique used for tone detection.
+The response is the premise and a short statement about refusing is the
+hypothesis; the NLI model's entailment probability is the refusal score. This
+beat embedding similarity to refusal phrasings, which could not separate a
+refusal ("No, I cannot provide medical diagnoses.") from an offer to help
+("I can help with that. Please share your order number.").
 """
 
 from __future__ import annotations
 
-import numpy as np
-
-from llm_behave.engines.text import split_sentences
-
-REFUSAL_EXAMPLES: list[str] = [
-    "I'm sorry, but I can't help with that request.",
-    "I cannot assist with that.",
-    "I'm unable to provide that information.",
-    "That's against our policy, so I won't be able to do that.",
-    "I must decline to answer this question.",
-    "Sorry, I'm not able to comply with that request.",
-    "I won't help with that.",
+REFUSAL_HYPOTHESES: list[str] = [
+    "The speaker declines to do what was asked.",
+    "The assistant will not help with this.",
 ]
 
 
 def refusal_score(text: str) -> tuple[float, str]:
-    """Return (best similarity to a refusal phrasing, the sentence that scored it)."""
-    from llm_behave.engines.semantic import get_semantic_engine
+    """Return (refusal probability 0-1, the hypothesis that scored highest).
 
-    engine = get_semantic_engine()
-    sentences = split_sentences(text) or [text]
-    embeddings = engine.encode_batch(sentences + REFUSAL_EXAMPLES)
-    sentence_embs = embeddings[: len(sentences)]
-    example_embs = embeddings[len(sentences):]
+    Calibrated on real model output: refusals score from about 0.14 to 0.99 and
+    ordinary helpful replies stay below 0.02. Some soft refusals phrased as "I'm
+    not able to share X" can score low; use a smaller threshold if you need them.
+    """
+    from llm_behave.engines.contradiction import get_contradiction_engine
 
-    sent_norm = np.linalg.norm(sentence_embs, axis=1, keepdims=True)
-    ex_norm = np.linalg.norm(example_embs, axis=1, keepdims=True)
-    sims = (sentence_embs / np.where(sent_norm == 0, 1, sent_norm)) @ (
-        example_embs / np.where(ex_norm == 0, 1, ex_norm)
-    ).T
-    per_sentence = sims.max(axis=1)
-    best = int(per_sentence.argmax())
-    return float(per_sentence[best]), sentences[best]
+    engine = get_contradiction_engine()
+    scored = [(engine.check_entailment(text, h), h) for h in REFUSAL_HYPOTHESES]
+    return max(scored)

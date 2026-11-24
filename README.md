@@ -60,6 +60,8 @@ pip install llm-behave[semantic]
 | `intent()` | Does the response intend to help? refuse? apologize? |
 | `calls_tool()` | Assert which tool the LLM called |
 | `contradicts()` | Assert the output contradicts a reference statement (NLI) |
+| `refuses()` / `not_refuses()` | Assert the response declines (or does not decline) the request, using the offline NLI model |
+| `not_contradicts_history()` | Assert the reply doesn't contradict anything the assistant said earlier in the conversation |
 | `length()` / `word_count()` | Assert the output is within a character / word range (no model needed) |
 | `matches_regex()` / `not_matches_regex()` | Assert an exact pattern is present / absent, e.g. no card numbers or emails (no model needed) |
 | `returns_valid_json()` | Assert the output parses as JSON (tolerates ```json fences) |
@@ -199,6 +201,15 @@ def get_baseline_output():
 result = DriftTest.compare("support_refund_flow", current_output)
 assert result.passed, f"Behavior drift detected: {result.details}"
 ```
+
+### Async agents
+
+```python
+conv = ConversationTest(agent=my_async_agent)   # an `async def` or a provider's .achat
+response = await conv.asay("Hello")
+```
+
+Every provider also has `achat()` / `achat_with_tools()` (they run the blocking call in a worker thread unless you override them).
 
 ### pytest fixtures (auto-registered)
 

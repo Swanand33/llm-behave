@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from llm_behave.core.conversation import ConversationTest
 from llm_behave.engines.contradiction import get_contradiction_engine
-from llm_behave.engines.refusal import refusal_score
 from llm_behave.engines.tone import get_tone_engine
 from llm_behave.providers.base import MockProvider
 
@@ -27,7 +26,6 @@ COMPLIANT = [
     "I can help with that. Please share your order number.",
     "Thanks for reaching out. Our store opens at 9am on weekdays.",
 ]
-from llm_behave.engines.text import split_sentences  # noqa: E402
 
 REFUSALS += [
     "I'm afraid that's something I can't do. You'd need to contact your bank directly.",

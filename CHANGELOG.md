@@ -7,11 +7,15 @@ All notable changes to llm-behave will be documented here.
 ## [0.3.0] — 2026-11-24
 
 ### Added
+- `refuses()` / `not_refuses()`: detect a declined request with the offline NLI model. Calibrated on real model output: refusals scored 0.14-0.99 and helpful replies stayed under 0.02, so the default threshold is 0.10. Some very soft phrasings ("I'm not able to share X") can score low.
+- `ConversationResponse.not_contradicts_history()` (checks every earlier assistant turn) and `not_contradicts_turn()` (the raising counterpart of `contradicts_turn()`, which still returns a bool).
+- Async support: `ConversationTest.asay()` (sync or `async def` agents) and `LLMProvider.achat()` / `achat_with_tools()`.
+- Manual CI runs (`workflow_dispatch`).
 - Model-free assertions: `length(min, max)`, `word_count(min, max)`, `matches_regex(pattern)` and `not_matches_regex(pattern)`. They work on a core install and record results like the other assertions.
 
 ### Fixed
 - **OpenAI tool-call `arguments` are now dicts**, like Anthropic and Ollama (they were a raw JSON string). Unparseable arguments are kept under `"_raw"`.
-- **`consistent_tone_across_turns()` now compares tone, not topic.** `ToneEngine.tone_similarity()` scores each reply against every tone and compares the centred profiles. It also no longer counts the latest reply twice. Thresholds tuned against the old behaviour may need re-tuning; validate against your own conversations.
+- **`consistent_tone_across_turns()` now compares tone, not topic.** `ToneEngine.tone_similarity()` scores each reply against every tone and compares the centred profiles. It also no longer counts the latest reply twice. The default `threshold` is now 0.4: on real model output, replies in the same register score about 0.65-0.95 and a polite-to-rude flip scores about 0.0-0.15. Thresholds tuned against the old behaviour may need re-tuning.
 - **Drift baselines:** a new `max_outputs` now applies to an existing baseline; `@DriftTest.baseline` keeps the wrapped function's name and docstring; baseline names that could escape the directory (`../x`, `a/b`) are rejected; writes are atomic; a corrupt baseline file raises a clear `ValueError`.
 
 ### Added

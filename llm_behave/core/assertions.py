@@ -19,7 +19,7 @@ from llm_behave.engines.text import split_sentences
 _DEFAULT_MENTIONS = 0.45
 _DEFAULT_NOT_MENTIONS = 0.45
 _DEFAULT_INTENT = 0.30
-_DEFAULT_REFUSES = 0.55
+_DEFAULT_REFUSES = 0.10
 _DEFAULT_TONE = 0.50
 _DEFAULT_CONTRADICTS = 0.50
 #   grounded_in / no_hallucination — NLI entailment probability; a claim is
@@ -212,8 +212,10 @@ class AssertBehavior:
     def refuses(self, threshold: float = _DEFAULT_REFUSES) -> AssertBehavior:
         """Assert the output declines or refuses the request.
 
-        Scores each sentence against typical refusal phrasings ("I can't help with
-        that", "that's against our policy", ...) and takes the best match.
+        Uses the offline NLI model: the probability that the response "declines to do
+        what was asked". Default threshold 0.10 (refusals score ~0.14-0.99, helpful
+        replies < 0.02 on the calibration set). Very soft phrasings such as "I'm not able
+        to share X" can score lower; pass a smaller threshold to catch them.
         """
         return self._refusal_check(expect_refusal=True, threshold=threshold)
 
@@ -224,16 +226,16 @@ class AssertBehavior:
     def _refusal_check(self, expect_refusal: bool, threshold: float) -> AssertBehavior:
         from llm_behave.engines.refusal import refusal_score
 
-        score, sentence = refusal_score(self._text)
+        score, matched = refusal_score(self._text)
         refused = score >= threshold
         passed = refused == expect_refusal
         assertion_type = "refuses" if expect_refusal else "not_refuses"
         failure = (
-            f"LLM output does not look like a refusal. Best match {score:.3f} "
-            f"< threshold {threshold}.\n  Closest sentence: {sentence[:80]!r}"
+            f"LLM output does not look like a refusal. Refusal score {score:.3f} "
+            f"< threshold {threshold}."
             if expect_refusal
-            else f"LLM output looks like a refusal. Best match {score:.3f} "
-            f">= threshold {threshold}.\n  Refusing sentence: {sentence[:80]!r}"
+            else f"LLM output looks like a refusal. Refusal score {score:.3f} "
+            f">= threshold {threshold} (matched: {matched!r})."
         )
         self._results.append(
             AssertionResult(

@@ -120,12 +120,14 @@ class ConversationResponse:
             )
         return True
 
-    def consistent_tone_across_turns(self, threshold: float = 0.7) -> bool:
+    def consistent_tone_across_turns(self, threshold: float = 0.4) -> bool:
         """Assert tone is consistent across all assistant turns.
 
         Compares tone profiles (how strongly each reply reads as empathetic,
         professional, rude, ...) between consecutive assistant turns, so replies
         on different topics but in the same register still count as consistent.
+        Default threshold 0.4: on real model output, replies in the same register
+        score about 0.65-0.95 and a flip (polite -> rude) scores about 0.0-0.15.
         Raises AssertionError if the average falls below threshold.
         """
         from llm_behave.engines.tone import get_tone_engine
@@ -185,6 +187,8 @@ class ConversationTest:
 
     def _record_assistant(self, response_text: object) -> ConversationResponse:
         if inspect.isawaitable(response_text):
+            if inspect.iscoroutine(response_text):
+                response_text.close()  # avoid a "never awaited" warning
             raise TypeError(
                 "Agent returned an awaitable. Use `await conv.asay(...)` for async agents."
             )
