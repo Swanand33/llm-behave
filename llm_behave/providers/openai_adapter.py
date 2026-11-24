@@ -22,7 +22,9 @@ class OpenAIProvider(LLMProvider):
             raise ImportError(
                 "openai package required. Install with: pip install llm-behave[openai]"
             ) from None
-        self._client = openai.OpenAI(**client_kwargs)
+        # Typed as Any: our messages/tools are plain dicts, which the SDK's
+        # TypedDict params reject under mypy when the openai package is installed.
+        self._client: Any = openai.OpenAI(**client_kwargs)
         self._model = model
 
     def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:

@@ -70,7 +70,8 @@ class ContradictionEngine:
             return raw.astype(float)
         shifted = raw - raw.max(axis=1, keepdims=True)
         probs = np.exp(shifted)
-        return probs / probs.sum(axis=1, keepdims=True)
+        normalized: np.ndarray = probs / probs.sum(axis=1, keepdims=True)
+        return normalized
 
     def check_contradiction(self, text_a: str, text_b: str) -> float:
         """Check if text_b contradicts text_a.
