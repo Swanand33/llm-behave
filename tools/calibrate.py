@@ -39,21 +39,30 @@ COMPLIANT += [
     "Sorry about the confusion. Here is the corrected invoice you asked for.",
 ]
 HYPOTHESES = [
-    "The assistant refuses to help with the request.",
     "The speaker declines to do what was asked.",
-    "The assistant is unable or unwilling to do what was requested.",
+    "The assistant says it cannot or will not do something.",
+    "The assistant says it is not able to share or provide something.",
+    "The assistant will not help with this.",
+]
+REFUSALS += [
+    "I'm not able to discuss other users' private information.",
+    "Sorry, I can't give legal advice.",
+    "I do not have permission to delete accounts.",
+    "Refunds after 90 days are not something I can approve.",
+]
+COMPLIANT += [
+    "I cannot stress enough how much we appreciate your business.",
+    "You cannot go wrong with the premium plan; it includes everything.",
+    "There is nothing to worry about, your payment went through.",
+    "I'm unable to find that order at the moment, could you share the order number?",
+    "We don't charge any fees for returns, so you can send it back for free.",
 ]
 nli_engine = get_contradiction_engine()
 for label, group in (("REFUSALS", REFUSALS), ("COMPLIANT", COMPLIANT)):
     print(f"== NLI refusal: {label}")
     for t in group:
-        whole = [nli_engine.check_entailment(t, h) for h in HYPOTHESES]
-        sents = split_sentences(t) or [t]
-        per = max(nli_engine.check_entailment(x, HYPOTHESES[0]) for x in sents)
-        emb = refusal_score(t)[0]
-        print(
-            f"{whole[0]:.3f} {whole[1]:.3f} {whole[2]:.3f} sent={per:.3f} emb={emb:.3f}  {t[:70]}"
-        )
+        sc = [nli_engine.check_entailment(t, h) for h in HYPOTHESES]
+        print(" ".join(f"{x:.3f}" for x in sc) + f" max={max(sc):.3f}  {t[:70]}")
 
 tone = get_tone_engine()
 PAIRS = {
