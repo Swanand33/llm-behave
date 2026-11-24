@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from abc import ABC, abstractmethod
 from typing import Any
@@ -65,6 +66,20 @@ class LLMProvider(ABC):
             ``arguments`` is always a dict, for every provider.
         """
         ...
+
+    async def achat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        """Async version of chat().
+
+        The default runs the blocking chat() in a worker thread so any provider works
+        in async tests. Override it for a natively async client.
+        """
+        return await asyncio.to_thread(self.chat, messages, **kwargs)
+
+    async def achat_with_tools(
+        self, messages: list[dict[str, str]], tools: list[dict], **kwargs: Any
+    ) -> tuple[str, list[dict[str, Any]]]:
+        """Async version of chat_with_tools() (runs in a worker thread by default)."""
+        return await asyncio.to_thread(self.chat_with_tools, messages, tools, **kwargs)
 
 
 class MockProvider(LLMProvider):

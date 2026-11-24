@@ -19,6 +19,7 @@ from llm_behave.engines.text import split_sentences
 _DEFAULT_MENTIONS = 0.45
 _DEFAULT_NOT_MENTIONS = 0.45
 _DEFAULT_INTENT = 0.30
+_DEFAULT_REFUSES = 0.55
 _DEFAULT_TONE = 0.50
 _DEFAULT_CONTRADICTS = 0.50
 #   grounded_in / no_hallucination — NLI entailment probability; a claim is
@@ -206,6 +207,45 @@ class AssertBehavior:
             f"{_format_top_matches(top)}\n"
             f"Output: {self._text[:200]}"
         )
+        return self
+
+    def refuses(self, threshold: float = _DEFAULT_REFUSES) -> AssertBehavior:
+        """Assert the output declines or refuses the request.
+
+        Scores each sentence against typical refusal phrasings ("I can't help with
+        that", "that's against our policy", ...) and takes the best match.
+        """
+        return self._refusal_check(expect_refusal=True, threshold=threshold)
+
+    def not_refuses(self, threshold: float = _DEFAULT_REFUSES) -> AssertBehavior:
+        """Assert the output does NOT decline or refuse the request."""
+        return self._refusal_check(expect_refusal=False, threshold=threshold)
+
+    def _refusal_check(self, expect_refusal: bool, threshold: float) -> AssertBehavior:
+        from llm_behave.engines.refusal import refusal_score
+
+        score, sentence = refusal_score(self._text)
+        refused = score >= threshold
+        passed = refused == expect_refusal
+        assertion_type = "refuses" if expect_refusal else "not_refuses"
+        failure = (
+            f"LLM output does not look like a refusal. Best match {score:.3f} "
+            f"< threshold {threshold}.\n  Closest sentence: {sentence[:80]!r}"
+            if expect_refusal
+            else f"LLM output looks like a refusal. Best match {score:.3f} "
+            f">= threshold {threshold}.\n  Refusing sentence: {sentence[:80]!r}"
+        )
+        self._results.append(
+            AssertionResult(
+                passed=passed,
+                assertion_type=assertion_type,
+                expected="a refusal" if expect_refusal else "no refusal",
+                actual_summary=self._text[:100],
+                similarity_score=score,
+                message="" if passed else failure,
+            )
+        )
+        assert passed, f"{failure}\nOutput: {self._text[:200]}"
         return self
 
     def calls_tool(self, tool_name: str) -> AssertBehavior:

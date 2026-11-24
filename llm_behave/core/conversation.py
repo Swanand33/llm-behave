@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import inspect
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -74,6 +76,50 @@ class ConversationResponse:
         )
         return contradiction_score >= threshold
 
+    def not_contradicts_turn(self, turn_number: int, threshold: float = 0.7) -> bool:
+        """Assert the response does not contradict a specific earlier turn.
+
+        The raising counterpart of contradicts_turn(): raises AssertionError on a
+        contradiction, returns True otherwise.
+        """
+        if self.contradicts_turn(turn_number, threshold):
+            earlier = next(t for t in self._history if t.turn_number == turn_number)
+            raise AssertionError(
+                f"Response contradicts turn {turn_number} (threshold: {threshold}).\n"
+                f"Turn {turn_number}: {earlier.content[:200]}\n"
+                f"Response: {self._content[:200]}"
+            )
+        return True
+
+    def not_contradicts_history(self, threshold: float = 0.7) -> bool:
+        """Assert the response does not contradict anything the assistant said earlier.
+
+        Checks the response against every previous assistant turn. Raises
+        AssertionError naming the turns it contradicts.
+        """
+        from llm_behave.engines.contradiction import get_contradiction_engine
+
+        engine = get_contradiction_engine()
+        offenders = []
+        for turn in self._history:
+            if turn.role != "assistant" or turn.turn_number >= self._turn_number:
+                continue
+            score = engine.check_contradiction(turn.content, self._content)
+            if score >= threshold:
+                offenders.append((turn, score))
+
+        if offenders:
+            lines = [
+                f"  turn {t.turn_number} (score {score:.3f}): {t.content[:80]!r}"
+                for t, score in offenders
+            ]
+            raise AssertionError(
+                f"Response contradicts earlier assistant turns (threshold: {threshold}):\n"
+                + "\n".join(lines)
+                + f"\nResponse: {self._content[:200]}"
+            )
+        return True
+
     def consistent_tone_across_turns(self, threshold: float = 0.7) -> bool:
         """Assert tone is consistent across all assistant turns.
 
@@ -117,7 +163,7 @@ class ConversationTest:
         assert response.recalls("Swanand")
     """
 
-    def __init__(self, agent: Callable[..., str]) -> None:
+    def __init__(self, agent: Callable[..., str | Awaitable[str]]) -> None:
         self._agent = agent
         self._history: list[TurnRecord] = []
         self._turn_counter = 0
@@ -130,6 +176,35 @@ class ConversationTest:
     def turn_count(self) -> int:
         return self._turn_counter
 
+    def _record_user(self, message: str) -> list[dict[str, str]]:
+        self._turn_counter += 1
+        self._history.append(
+            TurnRecord(turn_number=self._turn_counter, role="user", content=message)
+        )
+        return [{"role": t.role, "content": t.content} for t in self._history]
+
+    def _record_assistant(self, response_text: object) -> ConversationResponse:
+        if inspect.isawaitable(response_text):
+            raise TypeError(
+                "Agent returned an awaitable. Use `await conv.asay(...)` for async agents."
+            )
+        if not isinstance(response_text, str):
+            raise TypeError(
+                f"Agent must return a string, got {type(response_text).__name__}. "
+                "Wrap your LLM call to return the text content."
+            )
+        self._turn_counter += 1
+        self._history.append(
+            TurnRecord(
+                turn_number=self._turn_counter, role="assistant", content=response_text
+            )
+        )
+        return ConversationResponse(
+            content=response_text,
+            turn_number=self._turn_counter,
+            history=list(self._history),
+        )
+
     def say(self, message: str) -> ConversationResponse:
         """Send a message and get the agent's response.
 
@@ -139,35 +214,18 @@ class ConversationTest:
         Returns:
             ConversationResponse with assertion methods.
         """
-        self._turn_counter += 1
-        user_turn = TurnRecord(
-            turn_number=self._turn_counter,
-            role="user",
-            content=message,
-        )
-        self._history.append(user_turn)
+        messages = self._record_user(message)
+        return self._record_assistant(self._agent(messages))
 
-        # Build message list for the agent
-        messages = [{"role": t.role, "content": t.content} for t in self._history]
+    async def asay(self, message: str) -> ConversationResponse:
+        """Async version of say(). The agent may be a sync or an ``async def`` callable.
 
-        # Call the agent
-        response_text = self._agent(messages)
-        if not isinstance(response_text, str):
-            raise TypeError(
-                f"Agent must return a string, got {type(response_text).__name__}. "
-                "Wrap your LLM call to return the text content."
-            )
-
-        self._turn_counter += 1
-        assistant_turn = TurnRecord(
-            turn_number=self._turn_counter,
-            role="assistant",
-            content=response_text,
-        )
-        self._history.append(assistant_turn)
-
-        return ConversationResponse(
-            content=response_text,
-            turn_number=self._turn_counter,
-            history=list(self._history),
-        )
+        Usage:
+            conv = ConversationTest(agent=provider.achat)
+            response = await conv.asay("Hello")
+        """
+        messages = self._record_user(message)
+        result: Any = self._agent(messages)
+        if inspect.isawaitable(result):
+            result = await result
+        return self._record_assistant(result)
